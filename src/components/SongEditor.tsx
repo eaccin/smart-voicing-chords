@@ -127,6 +127,11 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
     return <ChordSheet song={song} onBack={() => setShowChordSheet(false)} />;
   }
 
+  if (showLeadSheet) {
+    saveSong(song);
+    return <LeadSheetPlayer song={song} onBack={() => setShowLeadSheet(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
