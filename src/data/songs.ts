@@ -1,3 +1,5 @@
+import type { LeadSheet } from "./leadsheet";
+
 export interface SongChord {
   label: string;       // e.g. "Cm", "Abmaj7", "G7"
   chordKey: string;    // e.g. "C", "Ab", "G"
