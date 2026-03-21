@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Guitar, Music2 } from "lucide-react";
+import { Guitar, Music2, Zap } from "lucide-react";
 
 const tabs = [
   { path: "/", label: "Chords", icon: Guitar },
+  { path: "/engine", label: "Engine", icon: Zap },
   { path: "/songs", label: "Songs", icon: Music2 },
 ];
 
