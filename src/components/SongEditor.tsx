@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
 import { SECTION_TYPES, PRESET_METERS, createId, saveSong } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
+import { createEmptyLeadSheet } from "@/data/leadsheet";
+import type { LeadSheet } from "@/data/leadsheet";
 import ChordDiagram from "./ChordDiagram";
 import TapTempo from "./TapTempo";
 import ChordPicker from "./ChordPicker";
 import ChordSheet from "./ChordSheet";
 import MeterSelector from "./MeterSelector";
+import LeadSheetEditor from "./leadsheet/LeadSheetEditor";
+import LeadSheetPlayer from "./leadsheet/LeadSheetPlayer";
 
 interface SongEditorProps {
   song: Song;
