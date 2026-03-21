@@ -13,9 +13,9 @@ interface VoicingPathResultsProps {
 }
 
 const REGION_COLORS: Record<string, string> = {
-  low: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
-  mid: "bg-accent/10 border-accent/30 text-accent",
-  high: "bg-orange-500/10 border-orange-500/30 text-orange-400",
+  low: "bg-accent/10 border-accent/30 text-accent",
+  mid: "bg-primary/10 border-primary/30 text-primary",
+  high: "bg-destructive/10 border-destructive/30 text-destructive",
 };
 
 export default function VoicingPathResults({ paths, progression, onSave }: VoicingPathResultsProps) {
