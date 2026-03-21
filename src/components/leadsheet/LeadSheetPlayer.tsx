@@ -16,9 +16,6 @@ interface LeadSheetPlayerProps {
 const DEFAULT_METER: Meter = { type: "4/4", beatsPerMeasure: 4, beatUnit: 4 };
 
 export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) {
-  const sheet = song.leadSheet;
-  if (!sheet) return null;
-
   const allChords = getAllChordsWithCustom();
   const metronome = useMetronome();
   const { playChord } = useChordPlayer();
@@ -27,6 +24,9 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
   const [activeBeat, setActiveBeat] = useState(-1);
   const timerRef = useRef<number | null>(null);
   const stateRef = useRef({ measureIdx: 0, beat: 0 });
+
+  const sheet = song.leadSheet;
+  if (!sheet) return null;
 
   const songMeter = song.meter ?? DEFAULT_METER;
   const bpm = song.bpm ?? 120;
