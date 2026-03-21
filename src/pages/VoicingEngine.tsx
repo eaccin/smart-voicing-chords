@@ -119,7 +119,7 @@ export default function VoicingEngine() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-sm text-emerald-400 text-center font-medium"
+            className="p-3 bg-accent/10 border border-accent/30 rounded-xl text-sm text-accent text-center font-medium"
           >
             ✓ {saveMessage}
           </motion.div>
