@@ -39,6 +39,7 @@ export interface Song {
   bpm?: number;
   meter?: Meter;
   sections: SongSection[];
+  leadSheet?: LeadSheet;
   createdAt: number;
   updatedAt: number;
 }
