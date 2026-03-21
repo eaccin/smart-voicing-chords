@@ -1,15 +1,18 @@
 import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Play, Square, Save, Volume2 } from "lucide-react";
-import type { VoicingPath, ProgressionChord } from "@/engine/voicingEngine";
+import { Play, Square, Save, Volume2, X } from "lucide-react";
+import type { VoicingPath, ProgressionChord, ScoredVoicing } from "@/engine/voicingEngine";
+import { resolveChords, getAvgFret } from "@/engine/voicingEngine";
 import type { ChordVoicing } from "@/data/chords";
 import { useChordPlayer } from "@/hooks/useChordPlayer";
 import ChordDiagram from "@/components/ChordDiagram";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface VoicingPathResultsProps {
   paths: VoicingPath[];
   progression: ProgressionChord[];
   onSave?: (path: VoicingPath) => void;
+  onPathChange?: (pathIndex: number, updatedPath: VoicingPath) => void;
 }
 
 const REGION_COLORS: Record<string, string> = {
@@ -18,12 +21,22 @@ const REGION_COLORS: Record<string, string> = {
   high: "bg-destructive/10 border-destructive/30 text-destructive",
 };
 
-export default function VoicingPathResults({ paths, progression, onSave }: VoicingPathResultsProps) {
+export default function VoicingPathResults({ paths: initialPaths, progression, onSave, onPathChange }: VoicingPathResultsProps) {
+  const [paths, setPaths] = useState(initialPaths);
   const [selectedPath, setSelectedPath] = useState(0);
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);
   const [isPlayingAll, setIsPlayingAll] = useState(false);
+  const [swapOpen, setSwapOpen] = useState<number | null>(null);
   const { playChord } = useChordPlayer();
   const playTimeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Sync if parent regenerates
+  const [prevInitial, setPrevInitial] = useState(initialPaths);
+  if (initialPaths !== prevInitial) {
+    setPaths(initialPaths);
+    setPrevInitial(initialPaths);
+    setSelectedPath(0);
+  }
 
   const stopPlayback = useCallback(() => {
     playTimeoutRef.current.forEach(clearTimeout);
@@ -48,7 +61,7 @@ export default function VoicingPathResults({ paths, progression, onSave }: Voici
     if (!path) return;
 
     setIsPlayingAll(true);
-    const interval = 1400; // ms between chords
+    const interval = 1400;
 
     path.voicings.forEach((sv, i) => {
       const t = setTimeout(() => {
@@ -65,9 +78,28 @@ export default function VoicingPathResults({ paths, progression, onSave }: Voici
     });
   }
 
+  function handleSwapVoicing(chordIdx: number, voicing: ChordVoicing, voicingIndex: number) {
+    const updated = [...paths];
+    const path = { ...updated[selectedPath] };
+    const voicings = [...path.voicings];
+    voicings[chordIdx] = {
+      voicing,
+      voicingIndex,
+      avgFret: getAvgFret(voicing),
+      score: voicings[chordIdx].score,
+    };
+    path.voicings = voicings;
+    path.totalScore = voicings.reduce((s, v) => s + v.score, 0);
+    updated[selectedPath] = path;
+    setPaths(updated);
+    setSwapOpen(null);
+    onPathChange?.(selectedPath, path);
+  }
+
   if (paths.length === 0) return null;
 
   const activePath = paths[selectedPath] ?? paths[0];
+  const resolvedChords = resolveChords(progression);
 
   return (
     <div className="space-y-4">
@@ -123,55 +155,91 @@ export default function VoicingPathResults({ paths, progression, onSave }: Voici
 
         <div className="px-4 py-4 overflow-x-auto">
           <div className="flex gap-4 min-w-min">
-            {activePath.voicings.map((sv, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="flex flex-col items-center"
-              >
-                {/* Chord label */}
-                <span className="text-xs font-bold text-foreground mb-1">
-                  {progression[i]?.label}
-                </span>
+            {activePath.voicings.map((sv, i) => {
+              const chord = resolvedChords[i];
+              const altVoicings = chord?.voicings ?? [];
 
-                {/* Mini diagram - tappable */}
-                <button
-                  onClick={() => handlePlaySingle(sv.voicing, i)}
-                  className={`relative w-[72px] p-1 rounded-xl transition-all ${
-                    playingIdx === i
-                      ? "bg-primary/20 ring-2 ring-primary/40 scale-105"
-                      : "bg-secondary/30 hover:bg-secondary/50"
-                  }`}
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="flex flex-col items-center"
                 >
-                  <ChordDiagram voicing={sv.voicing} size="sm" />
-                  {playingIdx === i && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
+                  <span className="text-xs font-bold text-foreground mb-1">
+                    {progression[i]?.label}
+                  </span>
+
+                  <Popover open={swapOpen === i} onOpenChange={(open) => setSwapOpen(open ? i : null)}>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`relative w-[72px] p-1 rounded-xl transition-all ${
+                          playingIdx === i
+                            ? "bg-primary/20 ring-2 ring-primary/40 scale-105"
+                            : swapOpen === i
+                            ? "bg-accent/20 ring-2 ring-accent/40"
+                            : "bg-secondary/30 hover:bg-secondary/50"
+                        }`}
+                      >
+                        <ChordDiagram voicing={sv.voicing} size="sm" />
+                        {playingIdx === i && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
+                          >
+                            <Volume2 className="w-3 h-3 text-primary-foreground" />
+                          </motion.div>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto max-w-[320px] max-h-[300px] overflow-y-auto p-2"
+                      side="top"
+                      align="center"
                     >
-                      <Volume2 className="w-3 h-3 text-primary-foreground" />
-                    </motion.div>
-                  )}
-                </button>
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                          Pick voicing
+                        </p>
+                        <button onClick={() => setSwapOpen(null)} className="text-muted-foreground hover:text-foreground">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {altVoicings.map((alt, vi) => (
+                          <button
+                            key={vi}
+                            onClick={() => {
+                              handlePlaySingle(alt, i);
+                              handleSwapVoicing(i, alt, vi);
+                            }}
+                            className={`flex flex-col items-center p-1.5 rounded-xl transition-colors ${
+                              sv.voicingIndex === vi
+                                ? "bg-accent/20 ring-1 ring-accent/40"
+                                : "bg-secondary/30 hover:bg-secondary/50"
+                            }`}
+                          >
+                            <div className="w-[60px]">
+                              <ChordDiagram voicing={alt} size="sm" />
+                            </div>
+                            <span className="text-[9px] text-muted-foreground mt-0.5">{alt.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
-                {/* Voicing info */}
-                <span className="text-[10px] text-muted-foreground mt-1">
-                  {sv.voicing.name}
-                </span>
-                <span className="text-[10px] text-muted-foreground/50">
-                  avg fret {sv.avgFret.toFixed(0)}
-                </span>
-
-                {/* Arrow between chords */}
-                {i < activePath.voicings.length - 1 && (
-                  <div className="absolute right-[-12px] top-1/2 text-muted-foreground/30 text-lg">
-                  </div>
-                )}
-              </motion.div>
-            ))}
+                  <span className="text-[10px] text-muted-foreground mt-1">
+                    {sv.voicing.name}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/50">
+                    avg fret {sv.avgFret.toFixed(0)}
+                  </span>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>
