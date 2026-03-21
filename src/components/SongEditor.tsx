@@ -32,7 +32,11 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
   const [pickerTarget, setPickerTarget] = useState<string | null>(null);
   const [expandedChord, setExpandedChord] = useState<string | null>(null);
   const [showChordSheet, setShowChordSheet] = useState(false);
+  const [showLeadSheet, setShowLeadSheet] = useState(false);
   const [showMeterOverride, setShowMeterOverride] = useState<string | null>(null);
+  const [editorMode, setEditorMode] = useState<"sections" | "leadsheet">(
+    initialSong.leadSheet ? "leadsheet" : "sections"
+  );
 
   const allChords = getAllChordsWithCustom();
 
