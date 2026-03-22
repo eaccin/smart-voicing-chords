@@ -177,6 +177,26 @@ export default function ProgressionInput({ progression, onChange }: ProgressionI
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Custom chord creator */}
+      <AnimatePresence>
+        {showCustom && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="bg-card border border-border/50 rounded-xl p-4"
+          >
+            <SongCustomChord
+              onPick={(chord: SongChord) => {
+                onChange([...progression, { key: chord.chordKey, suffix: chord.suffix, label: chord.label }]);
+                setShowCustom(false);
+              }}
+              onBack={() => setShowCustom(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

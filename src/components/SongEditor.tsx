@@ -454,3 +454,44 @@ function XIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+function LoadProgressionButton({ currentSongId, onLoad }: { currentSongId: string; onLoad: (chords: SongChord[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const savedSongs = getSongs().filter(s => s.id !== currentSongId && s.sections.some(sec => sec.chords.length > 0));
+
+  if (savedSongs.length === 0) return null;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-xs font-medium transition-colors">
+          <FolderOpen className="w-3.5 h-3.5" />
+          Load Saved
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 max-h-[300px] overflow-y-auto p-2" side="bottom" align="start">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+          Load from Song
+        </p>
+        <div className="space-y-1">
+          {savedSongs.map(song => (
+            <div key={song.id}>
+              <p className="text-xs font-semibold text-foreground px-2 pt-1">{song.title || "Untitled"}</p>
+              {song.sections.filter(s => s.chords.length > 0).map(section => (
+                <button
+                  key={section.id}
+                  onClick={() => { onLoad(section.chords); setOpen(false); }}
+                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                >
+                  <p className="text-xs text-muted-foreground">
+                    {section.label} · {section.chords.map(c => c.label).join(" → ")}
+                  </p>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
