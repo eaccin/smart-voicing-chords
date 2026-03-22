@@ -350,13 +350,28 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                       <p className="text-sm text-muted-foreground/50 italic">No chords yet</p>
                     )}
 
-                    <button
-                      onClick={() => setPickerTarget(section.id)}
-                      className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-xs font-medium transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Chord
-                    </button>
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => setPickerTarget(section.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-xs font-medium transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Chord
+                      </button>
+
+                      {/* Load from saved song */}
+                      <LoadProgressionButton
+                        currentSongId={song.id}
+                        onLoad={(chords) => {
+                          updateSong(s => ({
+                            ...s,
+                            sections: s.sections.map(sec =>
+                              sec.id === section.id ? { ...sec, chords: [...sec.chords, ...chords] } : sec
+                            ),
+                          }));
+                        }}
+                      />
+                    </div>
                   </div>
                 </motion.div>
               ))}

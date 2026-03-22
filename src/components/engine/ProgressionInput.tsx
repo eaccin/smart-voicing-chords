@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Search, RotateCcw, Pencil } from "lucide-react";
+import { Plus, X, Search, RotateCcw, Pencil, Wrench } from "lucide-react";
 import type { ProgressionChord } from "@/engine/voicingEngine";
 import { searchChords } from "@/engine/voicingEngine";
+import type { SongChord } from "@/data/songs";
+import SongCustomChord from "@/components/SongCustomChord";
 
 interface ProgressionInputProps {
   progression: ProgressionChord[];
