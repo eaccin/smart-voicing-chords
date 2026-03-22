@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
-import { SECTION_TYPES, PRESET_METERS, createId, saveSong } from "@/data/songs";
+import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
 import { createEmptyLeadSheet } from "@/data/leadsheet";
 import type { LeadSheet } from "@/data/leadsheet";
@@ -13,6 +13,7 @@ import ChordSheet from "./ChordSheet";
 import MeterSelector from "./MeterSelector";
 import LeadSheetEditor from "./leadsheet/LeadSheetEditor";
 import LeadSheetPlayer from "./leadsheet/LeadSheetPlayer";
+import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 
 interface SongEditorProps {
   song: Song;
