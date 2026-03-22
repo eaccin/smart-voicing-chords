@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
 import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
@@ -13,6 +13,7 @@ import ChordSheet from "./ChordSheet";
 import MeterSelector from "./MeterSelector";
 import LeadSheetEditor from "./leadsheet/LeadSheetEditor";
 import LeadSheetPlayer from "./leadsheet/LeadSheetPlayer";
+import LeadSheetStaffView from "./leadsheet/LeadSheetStaffView";
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 
 interface SongEditorProps {
@@ -34,6 +35,7 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
   const [expandedChord, setExpandedChord] = useState<string | null>(null);
   const [showChordSheet, setShowChordSheet] = useState(false);
   const [showLeadSheet, setShowLeadSheet] = useState(false);
+  const [showStaffView, setShowStaffView] = useState(false);
   const [showMeterOverride, setShowMeterOverride] = useState<string | null>(null);
   const [editorMode, setEditorMode] = useState<"sections" | "leadsheet">(
     initialSong.leadSheet ? "leadsheet" : "sections"
@@ -131,6 +133,33 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
   if (showLeadSheet) {
     saveSong(song);
     return <LeadSheetPlayer song={song} onBack={() => setShowLeadSheet(false)} />;
+  }
+
+  if (showStaffView && song.leadSheet) {
+    saveSong(song);
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+            <button onClick={() => setShowStaffView(false)} className="p-2 -ml-2 rounded-xl text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <BookOpen className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold text-foreground">Real Book View</h1>
+          </div>
+        </header>
+        <main className="max-w-3xl mx-auto px-4 py-6 pb-24">
+          <div className="bg-card rounded-2xl border border-border/50 p-4 overflow-hidden">
+            <LeadSheetStaffView
+              sheet={song.leadSheet}
+              meter={song.meter ?? DEFAULT_METER}
+              title={song.title || undefined}
+              artist={song.artist || undefined}
+            />
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -421,13 +450,22 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                 </div>
 
                 {/* Play Lead Sheet button */}
-                <button
-                  onClick={() => setShowLeadSheet(true)}
-                  className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-accent/20 border border-accent/30 text-foreground hover:bg-accent/30 transition-colors"
-                >
-                  <LayoutGrid className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">Play Lead Sheet</span>
-                </button>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => setShowLeadSheet(true)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-accent/20 border border-accent/30 text-foreground hover:bg-accent/30 transition-colors"
+                  >
+                    <LayoutGrid className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">Play</span>
+                  </button>
+                  <button
+                    onClick={() => setShowStaffView(true)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary/10 border border-primary/20 text-foreground hover:bg-primary/20 transition-colors"
+                  >
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">Real Book View</span>
+                  </button>
+                </div>
               </>
             )}
           </>
