@@ -450,13 +450,22 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                 </div>
 
                 {/* Play Lead Sheet button */}
-                <button
-                  onClick={() => setShowLeadSheet(true)}
-                  className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-accent/20 border border-accent/30 text-foreground hover:bg-accent/30 transition-colors"
-                >
-                  <LayoutGrid className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">Play Lead Sheet</span>
-                </button>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={() => setShowLeadSheet(true)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-accent/20 border border-accent/30 text-foreground hover:bg-accent/30 transition-colors"
+                  >
+                    <LayoutGrid className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">Play</span>
+                  </button>
+                  <button
+                    onClick={() => setShowStaffView(true)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary/10 border border-primary/20 text-foreground hover:bg-primary/20 transition-colors"
+                  >
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">Real Book View</span>
+                  </button>
+                </div>
               </>
             )}
           </>
