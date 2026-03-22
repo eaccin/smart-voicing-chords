@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
-import { SECTION_TYPES, PRESET_METERS, createId, saveSong } from "@/data/songs";
+import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
 import { createEmptyLeadSheet } from "@/data/leadsheet";
 import type { LeadSheet } from "@/data/leadsheet";
@@ -13,6 +13,7 @@ import ChordSheet from "./ChordSheet";
 import MeterSelector from "./MeterSelector";
 import LeadSheetEditor from "./leadsheet/LeadSheetEditor";
 import LeadSheetPlayer from "./leadsheet/LeadSheetPlayer";
+import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 
 interface SongEditorProps {
   song: Song;
@@ -349,13 +350,28 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                       <p className="text-sm text-muted-foreground/50 italic">No chords yet</p>
                     )}
 
-                    <button
-                      onClick={() => setPickerTarget(section.id)}
-                      className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-xs font-medium transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Add Chord
-                    </button>
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => setPickerTarget(section.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-xs font-medium transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Chord
+                      </button>
+
+                      {/* Load from saved song */}
+                      <LoadProgressionButton
+                        currentSongId={song.id}
+                        onLoad={(chords) => {
+                          updateSong(s => ({
+                            ...s,
+                            sections: s.sections.map(sec =>
+                              sec.id === section.id ? { ...sec, chords: [...sec.chords, ...chords] } : sec
+                            ),
+                          }));
+                        }}
+                      />
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -436,5 +452,46 @@ function XIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <path d="M3 3L9 9M9 3L3 9" />
     </svg>
+  );
+}
+
+function LoadProgressionButton({ currentSongId, onLoad }: { currentSongId: string; onLoad: (chords: SongChord[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const savedSongs = getSongs().filter(s => s.id !== currentSongId && s.sections.some(sec => sec.chords.length > 0));
+
+  if (savedSongs.length === 0) return null;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-xs font-medium transition-colors">
+          <FolderOpen className="w-3.5 h-3.5" />
+          Load Saved
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 max-h-[300px] overflow-y-auto p-2" side="bottom" align="start">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+          Load from Song
+        </p>
+        <div className="space-y-1">
+          {savedSongs.map(song => (
+            <div key={song.id}>
+              <p className="text-xs font-semibold text-foreground px-2 pt-1">{song.title || "Untitled"}</p>
+              {song.sections.filter(s => s.chords.length > 0).map(section => (
+                <button
+                  key={section.id}
+                  onClick={() => { onLoad(section.chords); setOpen(false); }}
+                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                >
+                  <p className="text-xs text-muted-foreground">
+                    {section.label} · {section.chords.map(c => c.label).join(" → ")}
+                  </p>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

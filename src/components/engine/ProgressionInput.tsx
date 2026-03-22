@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Search, RotateCcw, Pencil } from "lucide-react";
+import { Plus, X, Search, RotateCcw, Pencil, Wrench } from "lucide-react";
 import type { ProgressionChord } from "@/engine/voicingEngine";
 import { searchChords } from "@/engine/voicingEngine";
+import type { SongChord } from "@/data/songs";
+import SongCustomChord from "@/components/SongCustomChord";
 
 interface ProgressionInputProps {
   progression: ProgressionChord[];
@@ -13,6 +15,7 @@ export default function ProgressionInput({ progression, onChange }: ProgressionI
   const [query, setQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [showCustom, setShowCustom] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = searchChords(query);
@@ -110,6 +113,14 @@ export default function ProgressionInput({ progression, onChange }: ProgressionI
             <span className="text-xs font-medium">Clear All</span>
           </button>
         )}
+
+        <button
+          onClick={() => setShowCustom(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-accent/50 text-muted-foreground hover:text-accent transition-colors"
+        >
+          <Wrench className="w-3.5 h-3.5" />
+          <span className="text-xs font-medium">Custom Chord</span>
+        </button>
       </div>
 
       {/* Search dropdown */}
@@ -163,6 +174,26 @@ export default function ProgressionInput({ progression, onChange }: ProgressionI
                 <p className="text-xs text-muted-foreground text-center py-4">No chords found</p>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom chord creator */}
+      <AnimatePresence>
+        {showCustom && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="bg-card border border-border/50 rounded-xl p-4"
+          >
+            <SongCustomChord
+              onPick={(chord: SongChord) => {
+                onChange([...progression, { key: chord.chordKey, suffix: chord.suffix, label: chord.label }]);
+                setShowCustom(false);
+              }}
+              onBack={() => setShowCustom(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>
