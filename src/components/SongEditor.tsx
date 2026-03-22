@@ -13,6 +13,7 @@ import ChordSheet from "./ChordSheet";
 import MeterSelector from "./MeterSelector";
 import LeadSheetEditor from "./leadsheet/LeadSheetEditor";
 import LeadSheetPlayer from "./leadsheet/LeadSheetPlayer";
+import LeadSheetStaffView from "./leadsheet/LeadSheetStaffView";
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 
 interface SongEditorProps {
