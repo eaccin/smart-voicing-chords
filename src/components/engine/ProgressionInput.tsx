@@ -15,6 +15,7 @@ export default function ProgressionInput({ progression, onChange }: ProgressionI
   const [query, setQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [showCustom, setShowCustom] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = searchChords(query);
