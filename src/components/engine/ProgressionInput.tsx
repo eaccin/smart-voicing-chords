@@ -113,6 +113,14 @@ export default function ProgressionInput({ progression, onChange }: ProgressionI
             <span className="text-xs font-medium">Clear All</span>
           </button>
         )}
+
+        <button
+          onClick={() => setShowCustom(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-accent/50 text-muted-foreground hover:text-accent transition-colors"
+        >
+          <Wrench className="w-3.5 h-3.5" />
+          <span className="text-xs font-medium">Custom Chord</span>
+        </button>
       </div>
 
       {/* Search dropdown */}
