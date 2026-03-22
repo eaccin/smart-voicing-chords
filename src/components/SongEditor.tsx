@@ -35,6 +35,7 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
   const [expandedChord, setExpandedChord] = useState<string | null>(null);
   const [showChordSheet, setShowChordSheet] = useState(false);
   const [showLeadSheet, setShowLeadSheet] = useState(false);
+  const [showStaffView, setShowStaffView] = useState(false);
   const [showMeterOverride, setShowMeterOverride] = useState<string | null>(null);
   const [editorMode, setEditorMode] = useState<"sections" | "leadsheet">(
     initialSong.leadSheet ? "leadsheet" : "sections"
