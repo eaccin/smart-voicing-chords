@@ -391,6 +391,7 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                       {/* Load from saved song */}
                       <LoadProgressionButton
                         currentSongId={song.id}
+                        currentSectionId={section.id}
                         onLoad={(chords) => {
                           updateSong(s => ({
                             ...s,
@@ -500,11 +501,14 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-function LoadProgressionButton({ currentSongId, onLoad }: { currentSongId: string; onLoad: (chords: SongChord[]) => void }) {
+function LoadProgressionButton({ currentSongId, currentSectionId, onLoad }: { currentSongId: string; currentSectionId?: string; onLoad: (chords: SongChord[]) => void }) {
   const [open, setOpen] = useState(false);
-  const savedSongs = getSongs().filter(s => s.id !== currentSongId && s.sections.some(sec => sec.chords.length > 0));
+  const allSongs = getSongs();
+  const currentSong = allSongs.find(s => s.id === currentSongId);
+  const otherSongs = allSongs.filter(s => s.id !== currentSongId && s.sections.some(sec => sec.chords.length > 0));
+  const currentSongSections = currentSong?.sections.filter(s => s.id !== currentSectionId && s.chords.length > 0) ?? [];
 
-  if (savedSongs.length === 0) return null;
+  if (currentSongSections.length === 0 && otherSongs.length === 0) return null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -515,14 +519,13 @@ function LoadProgressionButton({ currentSongId, onLoad }: { currentSongId: strin
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 max-h-[300px] overflow-y-auto p-2" side="bottom" align="start">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
-          Load from Song
-        </p>
-        <div className="space-y-1">
-          {savedSongs.map(song => (
-            <div key={song.id}>
-              <p className="text-xs font-semibold text-foreground px-2 pt-1">{song.title || "Untitled"}</p>
-              {song.sections.filter(s => s.chords.length > 0).map(section => (
+        {currentSongSections.length > 0 && (
+          <>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+              This Song
+            </p>
+            <div className="space-y-1 mb-3">
+              {currentSongSections.map(section => (
                 <button
                   key={section.id}
                   onClick={() => { onLoad(section.chords); setOpen(false); }}
@@ -534,8 +537,33 @@ function LoadProgressionButton({ currentSongId, onLoad }: { currentSongId: strin
                 </button>
               ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
+        {otherSongs.length > 0 && (
+          <>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+              Other Songs
+            </p>
+            <div className="space-y-1">
+              {otherSongs.map(song => (
+                <div key={song.id}>
+                  <p className="text-xs font-semibold text-foreground px-2 pt-1">{song.title || "Untitled"}</p>
+                  {song.sections.filter(s => s.chords.length > 0).map(section => (
+                    <button
+                      key={section.id}
+                      onClick={() => { onLoad(section.chords); setOpen(false); }}
+                      className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                    >
+                      <p className="text-xs text-muted-foreground">
+                        {section.label} · {section.chords.map(c => c.label).join(" → ")}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );
