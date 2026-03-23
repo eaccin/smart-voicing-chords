@@ -439,9 +439,16 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
             {song.leadSheet && (
               <>
                 <div className="bg-card rounded-2xl border border-border/50 p-4">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
-                    Lead Sheet · tap beats to add chords
-                  </p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Lead Sheet · tap beats to add chords
+                    </p>
+                    <LoadSectionsToLeadSheetButton
+                      song={song}
+                      meter={song.meter ?? DEFAULT_METER}
+                      onUpdate={leadSheet => updateSong(s => ({ ...s, leadSheet }))}
+                    />
+                  </div>
                   <LeadSheetEditor
                     sheet={song.leadSheet}
                     meter={song.meter ?? DEFAULT_METER}
