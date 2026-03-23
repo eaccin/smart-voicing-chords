@@ -540,3 +540,123 @@ function LoadProgressionButton({ currentSongId, onLoad }: { currentSongId: strin
     </Popover>
   );
 }
+
+function LoadSectionsToLeadSheetButton({
+  song,
+  meter,
+  onUpdate,
+}: {
+  song: Song;
+  meter: Meter;
+  onUpdate: (sheet: LeadSheet) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Gather sources: current song sections + other saved songs' sections
+  const otherSongs = getSongs().filter(s => s.id !== song.id && s.sections.some(sec => sec.chords.length > 0));
+  const hasCurrentSections = song.sections.some(sec => sec.chords.length > 0);
+
+  if (!hasCurrentSections && otherSongs.length === 0) return null;
+
+  function loadChords(chords: SongChord[], label?: string) {
+    const measuresPerRow = song.leadSheet?.measuresPerRow ?? 4;
+    // Convert chords to lead sheet: 1 chord per measure, beat 0
+    const lsChords: LeadSheetChord[] = chords.map(c => ({
+      label: c.label,
+      chordKey: c.chordKey,
+      suffix: c.suffix,
+      beat: 0,
+      voicingIndex: c.voicingIndex,
+    }));
+
+    // Create measures, one per chord
+    const measures = lsChords.map(chord => ({
+      id: createMeasureId(),
+      chords: [chord],
+    }));
+
+    // Group into rows
+    const rows: LeadSheet["rows"] = [];
+    for (let i = 0; i < measures.length; i += measuresPerRow) {
+      const rowMeasures = measures.slice(i, i + measuresPerRow);
+      // Pad to measuresPerRow
+      while (rowMeasures.length < measuresPerRow) {
+        rowMeasures.push(createEmptyMeasure());
+      }
+      rows.push({
+        id: createRowId(),
+        label: i === 0 ? (label || undefined) : undefined,
+        measures: rowMeasures,
+      });
+    }
+
+    // Append to existing lead sheet or create new
+    const existing = song.leadSheet ?? createEmptyLeadSheet();
+    // If existing only has one empty row, replace it
+    const isBlank = existing.rows.length === 1 && existing.rows[0].measures.every(m => m.chords.length === 0);
+    const newSheet: LeadSheet = {
+      ...existing,
+      rows: isBlank ? rows : [...existing.rows, ...rows],
+    };
+    onUpdate(newSheet);
+    setOpen(false);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-[10px] font-semibold transition-colors">
+          <Download className="w-3 h-3" />
+          Load Sections
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 max-h-[350px] overflow-y-auto p-2" side="bottom" align="end">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
+          Load into Lead Sheet
+        </p>
+
+        {/* Current song sections */}
+        {hasCurrentSections && (
+          <div className="mb-2">
+            <p className="text-[10px] font-semibold text-primary px-2 mb-1">This Song</p>
+            {song.sections.filter(s => s.chords.length > 0).map(section => (
+              <button
+                key={section.id}
+                onClick={() => loadChords(section.chords, section.label)}
+                className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+              >
+                <p className="text-xs font-medium text-foreground">{section.label}</p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {section.chords.map(c => c.label).join(" → ")}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Other saved songs */}
+        {otherSongs.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-primary px-2 mb-1">Other Songs</p>
+            {otherSongs.map(s => (
+              <div key={s.id}>
+                <p className="text-xs font-semibold text-foreground px-2 pt-1">{s.title || "Untitled"}</p>
+                {s.sections.filter(sec => sec.chords.length > 0).map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => loadChords(section.chords, section.label)}
+                    className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                  >
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {section.label} · {section.chords.map(c => c.label).join(" → ")}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
