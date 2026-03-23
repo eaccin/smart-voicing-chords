@@ -4,8 +4,8 @@ import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, 
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
 import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
-import { createEmptyLeadSheet } from "@/data/leadsheet";
-import type { LeadSheet } from "@/data/leadsheet";
+import { createEmptyLeadSheet, createEmptyRow, createEmptyMeasure, createRowId, createMeasureId } from "@/data/leadsheet";
+import type { LeadSheet, LeadSheetChord } from "@/data/leadsheet";
 import ChordDiagram from "./ChordDiagram";
 import TapTempo from "./TapTempo";
 import ChordPicker from "./ChordPicker";
