@@ -391,6 +391,7 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                       {/* Load from saved song */}
                       <LoadProgressionButton
                         currentSongId={song.id}
+                        currentSectionId={section.id}
                         onLoad={(chords) => {
                           updateSong(s => ({
                             ...s,
