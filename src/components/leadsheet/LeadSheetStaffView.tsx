@@ -65,7 +65,7 @@ function StaffSystem({
       )}
 
       <StaffLines x={startX} y={staffY} width={availableWidth} />
-      <TrebleClef x={startX} y={staffY} />
+      {clef === "bass" ? <BassClef x={startX} y={staffY} /> : <TrebleClef x={startX} y={staffY} />}
       {system.showTimeSig && (
         <TimeSignature x={startX + CLEF_WIDTH} y={staffY} meter={meter} />
       )}
