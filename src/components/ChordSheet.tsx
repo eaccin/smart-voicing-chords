@@ -259,26 +259,14 @@ export default function ChordSheet({ song, onBack }: ChordSheetProps) {
                 )}
               </div>
               {section.chords.length > 0 ? (
-                <div className="flex flex-wrap gap-x-1 gap-y-1 items-baseline font-mono">
-                  {section.chords.map((ch, i) => {
-                    const idx = getFlatIndex();
-                    const voicing = getVoicing(ch);
-                    const isActive = autoPlaying && activeChordIndex === idx;
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => voicing && playChord(voicing)}
-                        className={`text-base font-bold px-2 py-1 rounded-lg transition-all ${
-                          isActive
-                            ? "bg-primary text-primary-foreground scale-110 shadow-lg"
-                            : "text-foreground bg-secondary/40 hover:bg-secondary/70"
-                        }`}
-                      >
-                        {ch.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <ChordSheetChordGrid
+                  chords={section.chords}
+                  getVoicing={getVoicing}
+                  getFlatIndex={getFlatIndex}
+                  autoPlaying={autoPlaying}
+                  activeChordIndex={activeChordIndex}
+                  playChord={playChord}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground/50 italic">No chords</p>
               )}
