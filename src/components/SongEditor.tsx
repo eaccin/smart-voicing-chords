@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, Download } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, Download, Copy } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
 import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
