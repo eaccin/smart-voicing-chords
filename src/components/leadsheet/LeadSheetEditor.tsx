@@ -175,6 +175,8 @@ interface MeasureCellProps {
   onRemoveChord: (beat: number) => void;
   onToggleRepeat: () => void;
   onRemove: () => void;
+  onDropChord?: (chord: LeadSheetChord, targetBeat: number) => void;
+  measureId: string;
   isActive?: boolean;
   activeBeat?: number;
 }
