@@ -265,12 +265,12 @@ function MeasureCell({
                     setDragOverBeat(null);
                     try {
                       const data = JSON.parse(e.dataTransfer.getData("application/chord-drag"));
-                      const { sourceMeasureId, ...chordData } = data;
-                      // Remove from source if different measure or different beat
-                      if (sourceMeasureId === measureId && data.beat !== beat) {
-                        onRemoveChord(data.beat);
+                      const { sourceMeasureId, sourceBeat, ...chordData } = data;
+                      // Remove from source if same measure but different beat
+                      if (sourceMeasureId === measureId && sourceBeat !== beat) {
+                        onRemoveChord(sourceBeat);
                       }
-                      if (onDropChord) onDropChord(chordData, beat);
+                      if (onDropChord) onDropChord(chordData, beat, sourceMeasureId, sourceBeat);
                     } catch {}
                   }}
                   onClick={() => chord ? onRemoveChord(beat) : onBeatClick(beat)}
