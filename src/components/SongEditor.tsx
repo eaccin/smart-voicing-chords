@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, Download } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, Download, Copy } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
 import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
@@ -137,29 +137,7 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
 
   if (showStaffView && song.leadSheet) {
     saveSong(song);
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
-          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-            <button onClick={() => setShowStaffView(false)} className="p-2 -ml-2 rounded-xl text-muted-foreground hover:text-foreground">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <BookOpen className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">Real Book View</h1>
-          </div>
-        </header>
-        <main className="max-w-3xl mx-auto px-4 py-6 pb-24">
-          <div className="bg-card rounded-2xl border border-border/50 p-4 overflow-hidden">
-            <LeadSheetStaffView
-              sheet={song.leadSheet}
-              meter={song.meter ?? DEFAULT_METER}
-              title={song.title || undefined}
-              artist={song.artist || undefined}
-            />
-          </div>
-        </main>
-      </div>
-    );
+    return <RealBookViewOverlay song={song} meter={song.meter ?? DEFAULT_METER} onBack={() => setShowStaffView(false)} />;
   }
 
   return (
@@ -444,11 +422,40 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Lead Sheet · tap beats to add chords
                     </p>
-                    <LoadSectionsToLeadSheetButton
-                      song={song}
-                      meter={song.meter ?? DEFAULT_METER}
-                      onUpdate={leadSheet => updateSong(s => ({ ...s, leadSheet }))}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          if (!song.leadSheet) return;
+                          const duplicated = JSON.parse(JSON.stringify(song.leadSheet)) as LeadSheet;
+                          // Regenerate IDs for duplicated rows/measures
+                          const newRows = duplicated.rows.map(r => ({
+                            ...r,
+                            id: createRowId(),
+                            measures: r.measures.map(m => ({
+                              ...m,
+                              id: createMeasureId(),
+                            })),
+                          }));
+                          updateSong(s => ({
+                            ...s,
+                            leadSheet: {
+                              ...s.leadSheet!,
+                              rows: [...s.leadSheet!.rows, ...newRows],
+                            },
+                          }));
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-[10px] font-semibold transition-colors"
+                        title="Duplicate entire progression"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Duplicate
+                      </button>
+                      <LoadSectionsToLeadSheetButton
+                        song={song}
+                        meter={song.meter ?? DEFAULT_METER}
+                        onUpdate={leadSheet => updateSong(s => ({ ...s, leadSheet }))}
+                      />
+                    </div>
                   </div>
                   <LeadSheetEditor
                     sheet={song.leadSheet}
@@ -686,5 +693,52 @@ function LoadSectionsToLeadSheetButton({
         )}
       </PopoverContent>
     </Popover>
+  );
+}
+
+function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter; onBack: () => void }) {
+  const [clef, setClef] = useState<"treble" | "bass">("treble");
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button onClick={onBack} className="p-2 -ml-2 rounded-xl text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <BookOpen className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-semibold text-foreground">Real Book View</h1>
+          <div className="ml-auto flex gap-1 bg-secondary rounded-lg p-0.5">
+            <button
+              onClick={() => setClef("treble")}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                clef === "treble" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              𝄞 Treble
+            </button>
+            <button
+              onClick={() => setClef("bass")}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                clef === "bass" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              𝄢 Bass
+            </button>
+          </div>
+        </div>
+      </header>
+      <main className="max-w-3xl mx-auto px-4 py-6 pb-24">
+        <div className="bg-card rounded-2xl border border-border/50 p-4 overflow-hidden">
+          <LeadSheetStaffView
+            sheet={song.leadSheet!}
+            meter={meter}
+            title={song.title || undefined}
+            artist={song.artist || undefined}
+            clef={clef}
+          />
+        </div>
+      </main>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "./staff/constants";
 import type { SystemData } from "./staff/types";
 import TrebleClef from "./staff/TrebleClef";
+import BassClef from "./staff/BassClef";
 import TimeSignature from "./staff/TimeSignature";
 import StaffLines from "./staff/StaffLines";
 import { BarLine, FinalBarLine } from "./staff/BarLines";
@@ -20,11 +21,12 @@ interface LeadSheetStaffViewProps {
   meter: Meter;
   title?: string;
   artist?: string;
+  clef?: "treble" | "bass";
 }
 
 /** Renders a single system (one row of staff with measures) */
 function StaffSystem({
-  system, sysIdx, totalSystems, staffY, systemY, svgWidth, meter, allMeasures,
+  system, sysIdx, totalSystems, staffY, systemY, svgWidth, meter, allMeasures, clef,
 }: {
   system: SystemData;
   sysIdx: number;
@@ -34,6 +36,7 @@ function StaffSystem({
   svgWidth: number;
   meter: Meter;
   allMeasures: LeadSheetMeasure[];
+  clef: "treble" | "bass";
 }) {
   const availableWidth = svgWidth - MARGIN_LEFT - MARGIN_RIGHT;
   const prefixWidth = CLEF_WIDTH + (system.showTimeSig ? TIME_SIG_WIDTH : 0);
@@ -62,7 +65,7 @@ function StaffSystem({
       )}
 
       <StaffLines x={startX} y={staffY} width={availableWidth} />
-      <TrebleClef x={startX} y={staffY} />
+      {clef === "bass" ? <BassClef x={startX} y={staffY} /> : <TrebleClef x={startX} y={staffY} />}
       {system.showTimeSig && (
         <TimeSignature x={startX + CLEF_WIDTH} y={staffY} meter={meter} />
       )}
@@ -106,7 +109,7 @@ function StaffSystem({
   );
 }
 
-export default function LeadSheetStaffView({ sheet, meter, title, artist }: LeadSheetStaffViewProps) {
+export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble" }: LeadSheetStaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
 
@@ -197,6 +200,7 @@ export default function LeadSheetStaffView({ sheet, meter, title, artist }: Lead
             svgWidth={containerWidth}
             meter={meter}
             allMeasures={allMeasures}
+            clef={clef}
           />
         ))}
       </svg>
