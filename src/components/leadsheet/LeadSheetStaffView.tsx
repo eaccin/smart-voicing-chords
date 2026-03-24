@@ -8,6 +8,7 @@ import {
 } from "./staff/constants";
 import type { SystemData } from "./staff/types";
 import TrebleClef from "./staff/TrebleClef";
+import BassClef from "./staff/BassClef";
 import TimeSignature from "./staff/TimeSignature";
 import StaffLines from "./staff/StaffLines";
 import { BarLine, FinalBarLine } from "./staff/BarLines";
