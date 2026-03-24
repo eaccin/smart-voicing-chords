@@ -137,29 +137,7 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
 
   if (showStaffView && song.leadSheet) {
     saveSong(song);
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
-          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-            <button onClick={() => setShowStaffView(false)} className="p-2 -ml-2 rounded-xl text-muted-foreground hover:text-foreground">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <BookOpen className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold text-foreground">Real Book View</h1>
-          </div>
-        </header>
-        <main className="max-w-3xl mx-auto px-4 py-6 pb-24">
-          <div className="bg-card rounded-2xl border border-border/50 p-4 overflow-hidden">
-            <LeadSheetStaffView
-              sheet={song.leadSheet}
-              meter={song.meter ?? DEFAULT_METER}
-              title={song.title || undefined}
-              artist={song.artist || undefined}
-            />
-          </div>
-        </main>
-      </div>
-    );
+    return <RealBookViewOverlay song={song} meter={song.meter ?? DEFAULT_METER} onBack={() => setShowStaffView(false)} />;
   }
 
   return (
