@@ -129,11 +129,22 @@ export default function LeadSheetEditor({ sheet, meter, onChange }: LeadSheetEdi
               <MeasureCell
                 key={measure.id}
                 measure={measure}
+                measureId={measure.id}
                 beatsPerMeasure={beatsPerMeasure}
                 onBeatClick={(beat) => setPickerTarget({ rowIdx, measureIdx, beat })}
                 onRemoveChord={(beat) => removeChordFromMeasure(rowIdx, measureIdx, beat)}
                 onToggleRepeat={() => toggleRepeat(rowIdx, measureIdx)}
                 onRemove={() => removeMeasure(rowIdx, measureIdx)}
+                onDropChord={(chord, targetBeat, sourceMeasureId, sourceBeat) => {
+                  if (sourceMeasureId && sourceMeasureId !== measure.id) {
+                    sheet.rows.forEach((r, ri) => {
+                      r.measures.forEach((m, mi) => {
+                        if (m.id === sourceMeasureId) removeChordFromMeasure(ri, mi, sourceBeat!);
+                      });
+                    });
+                  }
+                  addChordToMeasure(rowIdx, measureIdx, targetBeat, { ...chord, beat: targetBeat });
+                }}
               />
             ))}
             <button
@@ -175,6 +186,8 @@ interface MeasureCellProps {
   onRemoveChord: (beat: number) => void;
   onToggleRepeat: () => void;
   onRemove: () => void;
+  onDropChord?: (chord: LeadSheetChord, targetBeat: number, sourceMeasureId?: string, sourceBeat?: number) => void;
+  measureId: string;
   isActive?: boolean;
   activeBeat?: number;
 }
@@ -186,9 +199,12 @@ function MeasureCell({
   onRemoveChord,
   onToggleRepeat,
   onRemove,
+  onDropChord,
+  measureId,
   isActive,
   activeBeat,
 }: MeasureCellProps) {
+  const [dragOverBeat, setDragOverBeat] = useState<number | null>(null);
   if (measure.isRepeat) {
     return (
       <div className="relative group">
@@ -228,23 +244,51 @@ function MeasureCell({
             {Array.from({ length: beatsPerMeasure }).map((_, beat) => {
               const chord = chordMap.get(beat);
               const isBeatActive = isActive && activeBeat === beat;
+              const isDragOver = dragOverBeat === beat;
               return (
-                <button
+                <div
                   key={beat}
+                  draggable={!!chord}
+                  onDragStart={(e) => {
+                    if (!chord) return;
+                    e.dataTransfer.setData("application/chord-drag", JSON.stringify({ ...chord, sourceMeasureId: measureId, sourceBeat: beat }));
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setDragOverBeat(beat);
+                  }}
+                  onDragLeave={() => setDragOverBeat(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverBeat(null);
+                    try {
+                      const data = JSON.parse(e.dataTransfer.getData("application/chord-drag"));
+                      const { sourceMeasureId, sourceBeat, ...chordData } = data;
+                      // Remove from source if same measure but different beat
+                      if (sourceMeasureId === measureId && sourceBeat !== beat) {
+                        onRemoveChord(sourceBeat);
+                      }
+                      if (onDropChord) onDropChord(chordData, beat, sourceMeasureId, sourceBeat);
+                    } catch {}
+                  }}
                   onClick={() => chord ? onRemoveChord(beat) : onBeatClick(beat)}
-                  className={`flex-1 h-full flex items-center justify-center text-[11px] font-bold rounded transition-colors ${
-                    chord
-                      ? isBeatActive
-                        ? "text-primary-foreground bg-primary"
-                        : "text-foreground hover:text-destructive"
-                      : isBeatActive
-                        ? "text-primary"
-                        : "text-muted-foreground/30 hover:text-muted-foreground/60"
+                  className={`flex-1 h-full flex items-center justify-center text-[11px] font-bold rounded transition-colors cursor-${chord ? "grab" : "pointer"} ${
+                    isDragOver
+                      ? "ring-1 ring-primary bg-primary/10"
+                      : chord
+                        ? isBeatActive
+                          ? "text-primary-foreground bg-primary"
+                          : "text-foreground hover:text-destructive"
+                        : isBeatActive
+                          ? "text-primary"
+                          : "text-muted-foreground/30 hover:text-muted-foreground/60"
                   }`}
-                  title={chord ? `${chord.label} (click to remove)` : `Beat ${beat + 1} (click to add chord)`}
+                  title={chord ? `${chord.label} (drag to move, click to remove)` : `Beat ${beat + 1} (click to add chord)`}
                 >
                   {chord ? chord.label : "·"}
-                </button>
+                </div>
               );
             })}
           </div>
