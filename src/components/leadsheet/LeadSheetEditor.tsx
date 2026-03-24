@@ -251,7 +251,7 @@ function MeasureCell({
                   draggable={!!chord}
                   onDragStart={(e) => {
                     if (!chord) return;
-                    e.dataTransfer.setData("application/chord-drag", JSON.stringify({ ...chord, sourceMeasureId: measureId }));
+                    e.dataTransfer.setData("application/chord-drag", JSON.stringify({ ...chord, sourceMeasureId: measureId, sourceBeat: beat }));
                     e.dataTransfer.effectAllowed = "move";
                   }}
                   onDragOver={(e) => {
