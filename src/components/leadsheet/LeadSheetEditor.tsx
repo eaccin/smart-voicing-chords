@@ -135,7 +135,14 @@ export default function LeadSheetEditor({ sheet, meter, onChange }: LeadSheetEdi
                 onRemoveChord={(beat) => removeChordFromMeasure(rowIdx, measureIdx, beat)}
                 onToggleRepeat={() => toggleRepeat(rowIdx, measureIdx)}
                 onRemove={() => removeMeasure(rowIdx, measureIdx)}
-                onDropChord={(chord, targetBeat) => {
+                onDropChord={(chord, targetBeat, sourceMeasureId, sourceBeat) => {
+                  if (sourceMeasureId && sourceMeasureId !== measure.id) {
+                    sheet.rows.forEach((r, ri) => {
+                      r.measures.forEach((m, mi) => {
+                        if (m.id === sourceMeasureId) removeChordFromMeasure(ri, mi, sourceBeat!);
+                      });
+                    });
+                  }
                   addChordToMeasure(rowIdx, measureIdx, targetBeat, { ...chord, beat: targetBeat });
                 }}
               />
