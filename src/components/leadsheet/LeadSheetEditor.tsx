@@ -188,9 +188,12 @@ function MeasureCell({
   onRemoveChord,
   onToggleRepeat,
   onRemove,
+  onDropChord,
+  measureId,
   isActive,
   activeBeat,
 }: MeasureCellProps) {
+  const [dragOverBeat, setDragOverBeat] = useState<number | null>(null);
   if (measure.isRepeat) {
     return (
       <div className="relative group">
