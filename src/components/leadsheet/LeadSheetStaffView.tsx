@@ -109,7 +109,7 @@ function StaffSystem({
   );
 }
 
-export default function LeadSheetStaffView({ sheet, meter, title, artist }: LeadSheetStaffViewProps) {
+export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble" }: LeadSheetStaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
 
