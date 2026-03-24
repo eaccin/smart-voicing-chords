@@ -129,11 +129,15 @@ export default function LeadSheetEditor({ sheet, meter, onChange }: LeadSheetEdi
               <MeasureCell
                 key={measure.id}
                 measure={measure}
+                measureId={measure.id}
                 beatsPerMeasure={beatsPerMeasure}
                 onBeatClick={(beat) => setPickerTarget({ rowIdx, measureIdx, beat })}
                 onRemoveChord={(beat) => removeChordFromMeasure(rowIdx, measureIdx, beat)}
                 onToggleRepeat={() => toggleRepeat(rowIdx, measureIdx)}
                 onRemove={() => removeMeasure(rowIdx, measureIdx)}
+                onDropChord={(chord, targetBeat) => {
+                  addChordToMeasure(rowIdx, measureIdx, targetBeat, { ...chord, beat: targetBeat });
+                }}
               />
             ))}
             <button
