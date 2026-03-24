@@ -200,6 +200,7 @@ export default function LeadSheetStaffView({ sheet, meter, title, artist, clef =
             svgWidth={containerWidth}
             meter={meter}
             allMeasures={allMeasures}
+            clef={clef}
           />
         ))}
       </svg>
