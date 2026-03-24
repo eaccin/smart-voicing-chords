@@ -1,4 +1,5 @@
 import { ChevronLeft, Printer, Volume2, VolumeX, Play, Square } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Song, SongChord, Meter } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
 import ChordDiagram from "./ChordDiagram";
