@@ -281,3 +281,102 @@ export default function ChordSheet({ song, onBack }: ChordSheetProps) {
     </div>
   );
 }
+
+/** Chord grid with expandable voicing diagrams */
+function ChordSheetChordGrid({
+  chords,
+  getVoicing,
+  getFlatIndex,
+  autoPlaying,
+  activeChordIndex,
+  playChord,
+}: {
+  chords: SongChord[];
+  getVoicing: (ch: SongChord) => any;
+  getFlatIndex: () => number;
+  autoPlaying: boolean;
+  activeChordIndex: number;
+  playChord: (v: any) => void;
+}) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const allChords = getAllChordsWithCustom();
+
+  function getAllVoicings(ch: SongChord) {
+    const found = allChords.find(c => c.key === ch.chordKey && c.suffix === ch.suffix);
+    return found?.voicings ?? [];
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-x-1 gap-y-1 items-baseline font-mono">
+        {chords.map((ch, i) => {
+          const idx = getFlatIndex();
+          const voicing = getVoicing(ch);
+          const isActive = autoPlaying && activeChordIndex === idx;
+          return (
+            <button
+              key={i}
+              onClick={() => setExpandedIdx(prev => prev === i ? null : i)}
+              className={`text-base font-bold px-2 py-1 rounded-lg transition-all ${
+                isActive
+                  ? "bg-primary text-primary-foreground scale-110 shadow-lg"
+                  : expandedIdx === i
+                    ? "text-primary bg-primary/10 ring-1 ring-primary/30"
+                    : "text-foreground bg-secondary/40 hover:bg-secondary/70"
+              }`}
+            >
+              {ch.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {expandedIdx !== null && expandedIdx < chords.length && (() => {
+          const ch = chords[expandedIdx];
+          const voicing = getVoicing(ch);
+          const allVoicings = getAllVoicings(ch);
+          if (!voicing) return null;
+          return (
+            <motion.div
+              key={expandedIdx}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden mt-3"
+            >
+              <div className="bg-secondary/30 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-bold text-foreground">{ch.label}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {allVoicings.length} voicing{allVoicings.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                  {allVoicings.map((v, vi) => (
+                    <button
+                      key={vi}
+                      onClick={() => playChord(v)}
+                      className={`flex flex-col items-center p-2 rounded-xl transition-colors flex-shrink-0 ${
+                        vi === ch.voicingIndex
+                          ? "bg-primary/10 ring-1 ring-primary/30"
+                          : "hover:bg-secondary/50"
+                      }`}
+                    >
+                      <div className="w-[60px]">
+                        <ChordDiagram voicing={v} size="sm" />
+                      </div>
+                      <span className="text-[9px] text-muted-foreground mt-1 truncate max-w-[60px]">{v.name}</span>
+                      <Volume2 className="w-3 h-3 text-muted-foreground/50 mt-0.5" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+    </div>
+  );
+}

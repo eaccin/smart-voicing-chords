@@ -444,11 +444,40 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Lead Sheet · tap beats to add chords
                     </p>
-                    <LoadSectionsToLeadSheetButton
-                      song={song}
-                      meter={song.meter ?? DEFAULT_METER}
-                      onUpdate={leadSheet => updateSong(s => ({ ...s, leadSheet }))}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          if (!song.leadSheet) return;
+                          const duplicated = JSON.parse(JSON.stringify(song.leadSheet)) as LeadSheet;
+                          // Regenerate IDs for duplicated rows/measures
+                          const newRows = duplicated.rows.map(r => ({
+                            ...r,
+                            id: createRowId(),
+                            measures: r.measures.map(m => ({
+                              ...m,
+                              id: createMeasureId(),
+                            })),
+                          }));
+                          updateSong(s => ({
+                            ...s,
+                            leadSheet: {
+                              ...s.leadSheet!,
+                              rows: [...s.leadSheet!.rows, ...newRows],
+                            },
+                          }));
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary text-[10px] font-semibold transition-colors"
+                        title="Duplicate entire progression"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Duplicate
+                      </button>
+                      <LoadSectionsToLeadSheetButton
+                        song={song}
+                        meter={song.meter ?? DEFAULT_METER}
+                        onUpdate={leadSheet => updateSong(s => ({ ...s, leadSheet }))}
+                      />
+                    </div>
                   </div>
                   <LeadSheetEditor
                     sheet={song.leadSheet}
