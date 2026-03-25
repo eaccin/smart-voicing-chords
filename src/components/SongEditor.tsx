@@ -700,16 +700,112 @@ function LoadSectionsToLeadSheetButton({
 
 function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter; onBack: () => void }) {
   const [clef, setClef] = useState<"treble" | "bass">("treble");
+  const allChords = getAllChordsWithCustom();
+  const metronome = useMetronome();
+  const { playChord } = useChordPlayer();
+  const [playing, setPlaying] = useState(false);
+  const [activeMeasure, setActiveMeasure] = useState(-1);
+  const [activeBeat, setActiveBeat] = useState(-1);
+  const timerRef = useRef<number | null>(null);
+  const stateRef = useRef({ measureIdx: 0, beat: 0 });
+
+  const sheet = song.leadSheet!;
+  const bpm = song.bpm ?? 120;
+  const beatsPerMeasure = meter.beatsPerMeasure;
+
+  const flat = flattenMeasures(sheet);
+  const allMeasuresList = flat.map(f => f.measure);
+
+  function getVoicing(chord: { chordKey: string; suffix: string; voicingIndex: number }) {
+    const found = allChords.find(c => c.key === chord.chordKey && c.suffix === chord.suffix);
+    if (!found) return null;
+    return found.voicings[chord.voicingIndex] ?? found.voicings[0] ?? null;
+  }
+
+  const stopPlayback = useCallback(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    metronome.stop();
+    setPlaying(false);
+    setActiveMeasure(-1);
+    setActiveBeat(-1);
+    stateRef.current = { measureIdx: 0, beat: 0 };
+  }, [metronome]);
+
+  const startPlayback = useCallback(() => {
+    if (flat.length === 0) return;
+    stopPlayback();
+    setPlaying(true);
+    metronome.start(bpm, beatsPerMeasure);
+    stateRef.current = { measureIdx: 0, beat: 0 };
+    setActiveMeasure(0);
+    setActiveBeat(0);
+
+    const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
+    const onBeat0 = firstChords.find(c => c.beat === 0);
+    if (onBeat0) { const v = getVoicing(onBeat0); if (v) playChord(v); }
+
+    const interval = (60 / bpm) * 1000;
+    timerRef.current = window.setInterval(() => {
+      let { measureIdx, beat } = stateRef.current;
+      beat++;
+      if (beat >= beatsPerMeasure) {
+        beat = 0;
+        measureIdx++;
+        if (measureIdx >= flat.length) { stopPlayback(); return; }
+      }
+      stateRef.current = { measureIdx, beat };
+      setActiveMeasure(measureIdx);
+      setActiveBeat(beat);
+
+      const chords = getEffectiveChords(allMeasuresList[measureIdx], allMeasuresList, measureIdx);
+      const onBeat = chords.find(c => c.beat === beat);
+      if (onBeat) { const v = getVoicing(onBeat); if (v) playChord(v); }
+    }, interval);
+  }, [flat, bpm, beatsPerMeasure, metronome, playChord, stopPlayback, allMeasuresList]);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack} className="p-2 -ml-2 rounded-xl text-muted-foreground hover:text-foreground">
+          <button onClick={() => { stopPlayback(); onBack(); }} className="p-2 -ml-2 rounded-xl text-muted-foreground hover:text-foreground">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <BookOpen className="w-5 h-5 text-primary" />
           <h1 className="text-lg font-semibold text-foreground">Real Book View</h1>
+
+          {/* Play/Stop */}
+          <button
+            onClick={playing ? stopPlayback : startPlayback}
+            className={`p-2 rounded-xl transition-colors ${
+              playing ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+            title={playing ? "Stop" : "Play"}
+          >
+            {playing ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </button>
+
+          {playing && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">{bpm} BPM</span>
+              <div className="flex gap-1">
+                {Array.from({ length: beatsPerMeasure }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      metronome.currentBeat === i
+                        ? i === 0 ? "bg-primary scale-125" : "bg-accent-foreground"
+                        : "bg-secondary"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="ml-auto flex gap-1 bg-secondary rounded-lg p-0.5">
             <button
               onClick={() => setClef("treble")}
@@ -733,11 +829,13 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
       <main className="max-w-3xl mx-auto px-4 py-6 pb-24">
         <div className="bg-card rounded-2xl border border-border/50 p-4 overflow-hidden">
           <LeadSheetStaffView
-            sheet={song.leadSheet!}
+            sheet={sheet}
             meter={meter}
             title={song.title || undefined}
             artist={song.artist || undefined}
             clef={clef}
+            activeMeasureIndex={playing ? activeMeasure : undefined}
+            activeBeat={playing ? activeBeat : undefined}
           />
         </div>
       </main>
