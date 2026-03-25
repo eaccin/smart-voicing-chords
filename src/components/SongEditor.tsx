@@ -4,8 +4,10 @@ import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, 
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
 import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
-import { createEmptyLeadSheet, createEmptyRow, createEmptyMeasure, createRowId, createMeasureId } from "@/data/leadsheet";
+import { createEmptyLeadSheet, createEmptyRow, createEmptyMeasure, createRowId, createMeasureId, flattenMeasures, getEffectiveChords } from "@/data/leadsheet";
 import type { LeadSheet, LeadSheetChord } from "@/data/leadsheet";
+import { useMetronome } from "@/hooks/useMetronome";
+import { useChordPlayer } from "@/hooks/useChordPlayer";
 import ChordDiagram from "./ChordDiagram";
 import TapTempo from "./TapTempo";
 import ChordPicker from "./ChordPicker";
