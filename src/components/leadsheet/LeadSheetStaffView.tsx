@@ -29,6 +29,7 @@ interface LeadSheetStaffViewProps {
 /** Renders a single system (one row of staff with measures) */
 function StaffSystem({
   system, sysIdx, totalSystems, staffY, systemY, svgWidth, meter, allMeasures, clef,
+  activeMeasureIndex, activeBeat,
 }: {
   system: SystemData;
   sysIdx: number;
@@ -39,6 +40,8 @@ function StaffSystem({
   meter: Meter;
   allMeasures: LeadSheetMeasure[];
   clef: "treble" | "bass";
+  activeMeasureIndex?: number;
+  activeBeat?: number;
 }) {
   const availableWidth = svgWidth - MARGIN_LEFT - MARGIN_RIGHT;
   const prefixWidth = CLEF_WIDTH + (system.showTimeSig ? TIME_SIG_WIDTH : 0);
