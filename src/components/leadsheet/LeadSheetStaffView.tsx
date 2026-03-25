@@ -142,7 +142,7 @@ function StaffSystem({
   );
 }
 
-export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble" }: LeadSheetStaffViewProps) {
+export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble", activeMeasureIndex, activeBeat }: LeadSheetStaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
 
@@ -234,6 +234,8 @@ export default function LeadSheetStaffView({ sheet, meter, title, artist, clef =
             meter={meter}
             allMeasures={allMeasures}
             clef={clef}
+            activeMeasureIndex={activeMeasureIndex}
+            activeBeat={activeBeat}
           />
         ))}
       </svg>
