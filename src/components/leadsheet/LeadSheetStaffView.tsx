@@ -22,6 +22,8 @@ interface LeadSheetStaffViewProps {
   title?: string;
   artist?: string;
   clef?: "treble" | "bass";
+  activeMeasureIndex?: number;
+  activeBeat?: number;
 }
 
 /** Renders a single system (one row of staff with measures) */
