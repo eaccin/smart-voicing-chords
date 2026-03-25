@@ -83,8 +83,36 @@ function StaffSystem({
         const isRepeat = mData.measure.isRepeat;
         const isLast = sysIdx === totalSystems - 1 && mIdx === system.measures.length - 1;
 
+        const isActive = activeMeasureIndex === mData.measureIndex;
+
         return (
           <g key={mData.measure.id}>
+            {/* Active measure highlight */}
+            {isActive && (
+              <rect
+                x={mx + 1}
+                y={staffY - 16}
+                width={measureWidth - 2}
+                height={STAFF_HEIGHT + 32}
+                rx={4}
+                fill="hsl(var(--primary) / 0.1)"
+                stroke="hsl(var(--primary) / 0.3)"
+                strokeWidth={1.5}
+              />
+            )}
+
+            {/* Beat cursor within active measure */}
+            {isActive && activeBeat !== undefined && activeBeat >= 0 && (
+              <rect
+                x={mx + (measureWidth * activeBeat) / meter.beatsPerMeasure + 2}
+                y={staffY - 4}
+                width={measureWidth / meter.beatsPerMeasure - 4}
+                height={STAFF_HEIGHT + 8}
+                rx={3}
+                fill="hsl(var(--primary) / 0.15)"
+              />
+            )}
+
             {!isRepeat && chords.map((chord, cIdx) => {
               const chordX = chords.length === 1
                 ? mx + measureWidth * 0.1
