@@ -38,6 +38,7 @@ export interface Song {
   artist?: string;
   bpm?: number;
   meter?: Meter;
+  songKey?: string;
   sections: SongSection[];
   leadSheet?: LeadSheet;
   createdAt: number;

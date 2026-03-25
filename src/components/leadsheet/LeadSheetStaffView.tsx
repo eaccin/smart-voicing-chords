@@ -21,6 +21,7 @@ interface LeadSheetStaffViewProps {
   meter: Meter;
   title?: string;
   artist?: string;
+  songKey?: string;
   clef?: "treble" | "bass";
   activeMeasureIndex?: number;
   activeBeat?: number;
@@ -142,7 +143,7 @@ function StaffSystem({
   );
 }
 
-export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble", activeMeasureIndex, activeBeat }: LeadSheetStaffViewProps) {
+export default function LeadSheetStaffView({ sheet, meter, title, artist, songKey, clef = "treble", activeMeasureIndex, activeBeat }: LeadSheetStaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
 
@@ -217,6 +218,15 @@ export default function LeadSheetStaffView({ sheet, meter, title, artist, clef =
                 fill="currentColor" className="text-muted-foreground" opacity={0.6}
               >
                 {artist}
+              </text>
+            )}
+            {songKey && (
+              <text
+                x={containerWidth - MARGIN_RIGHT} y={28} textAnchor="end"
+                fontSize="14" fontWeight="600" fontFamily="'IBM Plex Mono', monospace"
+                fill="currentColor" className="text-primary"
+              >
+                Key: {songKey}
               </text>
             )}
           </g>
