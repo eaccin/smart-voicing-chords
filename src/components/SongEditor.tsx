@@ -700,6 +700,7 @@ function LoadSectionsToLeadSheetButton({
 
 function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter; onBack: () => void }) {
   const [clef, setClef] = useState<"treble" | "bass">("treble");
+  const [songKey, setSongKey] = useState(song.songKey ?? "");
   const allChords = getAllChordsWithCustom();
   const metronome = useMetronome();
   const { playChord } = useChordPlayer();
@@ -777,6 +778,21 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
           <BookOpen className="w-5 h-5 text-primary" />
           <h1 className="text-lg font-semibold text-foreground">Real Book View</h1>
 
+          {/* Song Key selector */}
+          <select
+            value={songKey}
+            onChange={(e) => setSongKey(e.target.value)}
+            className="px-2 py-1 rounded-lg bg-secondary text-foreground text-xs font-semibold border border-border/50 outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="">No Key</option>
+            {["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"].map(k => (
+              <option key={k} value={k}>{k}</option>
+            ))}
+            {["Cm", "C#m", "Dm", "Ebm", "Em", "Fm", "F#m", "Gm", "Abm", "Am", "Bbm", "Bm"].map(k => (
+              <option key={k} value={k}>{k}</option>
+            ))}
+          </select>
+
           {/* Play/Stop */}
           <button
             onClick={playing ? stopPlayback : startPlayback}
@@ -833,6 +849,7 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
             meter={meter}
             title={song.title || undefined}
             artist={song.artist || undefined}
+            songKey={songKey || undefined}
             clef={clef}
             activeMeasureIndex={playing ? activeMeasure : undefined}
             activeBeat={playing ? activeBeat : undefined}
