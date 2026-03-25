@@ -11,10 +11,9 @@ const Index = () => {
   const [query, setQuery] = useState("");
   const [activeRoot, setActiveRoot] = useState<string | null>(null);
   const [activeSuffix, setActiveSuffix] = useState<string | null>(null);
-  const [selectedChord, setSelectedChord] = useState<Chord | null>(null);
+  const [expandedChordId, setExpandedChordId] = useState<string | null>(null);
   const [showCreator, setShowCreator] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activeVoicing, setActiveVoicing] = useState(0);
   const { playChord } = useChordPlayer();
 
   const allChords = useMemo(() => getAllChordsWithCustom(), [refreshKey]);
@@ -46,32 +45,34 @@ const Index = () => {
     return results;
   }, [query, activeRoot, activeSuffix, allChords]);
 
+  // Group chords into rows for inline expansion
+  const chordRows = useMemo(() => {
+    const cols = window.innerWidth >= 640 ? 5 : 4;
+    const rows: Chord[][] = [];
+    for (let i = 0; i < filteredChords.length; i += cols) {
+      rows.push(filteredChords.slice(i, i + cols));
+    }
+    return rows;
+  }, [filteredChords]);
+
   const handleRootClick = (root: string) => {
     setActiveRoot(prev => prev === root ? null : root);
-    setSelectedChord(null);
-    setActiveVoicing(0);
+    setExpandedChordId(null);
   };
 
   const handleSuffixClick = (suffix: string) => {
     setActiveSuffix(prev => prev === suffix ? null : suffix);
-    setSelectedChord(null);
-    setActiveVoicing(0);
+    setExpandedChordId(null);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
-    setSelectedChord(null);
-    setActiveVoicing(0);
-  };
-
-  const handleSearchFocus = () => {
-    setSelectedChord(null);
-    setActiveVoicing(0);
+    setExpandedChordId(null);
   };
 
   const handleChordSelect = (chord: Chord) => {
-    setSelectedChord(prev => prev && prev.key === chord.key && prev.suffix === chord.suffix ? null : chord);
-    setActiveVoicing(0);
+    const id = `${chord.key}-${chord.suffix}`;
+    setExpandedChordId(prev => prev === id ? null : id);
   };
 
   const handleVoicingSaved = useCallback(() => {
@@ -104,7 +105,7 @@ const Index = () => {
               type="text"
               value={query}
               onChange={handleSearchChange}
-              onFocus={handleSearchFocus}
+              onFocus={() => setExpandedChordId(null)}
               placeholder="Search chords… e.g. Am7, C#m"
               className="w-full pl-10 pr-4 py-2.5 bg-surface rounded-xl text-foreground placeholder:text-muted-foreground text-sm font-medium outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
             />
@@ -150,31 +151,53 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Chord grid + voicing display */}
+      {/* Chord grid with inline voicing expansion */}
       <main className="max-w-lg mx-auto px-4 py-4">
-        {/* Chord buttons grid */}
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mb-4">
-          {filteredChords.map(chord => {
-            const id = `${chord.key}-${chord.suffix}`;
-            const isSelected = selectedChord && `${selectedChord.key}-${selectedChord.suffix}` === id;
-            return (
-              <button
-                key={id}
-                onClick={() => handleChordSelect(chord)}
-                className={`p-2.5 rounded-xl text-center transition-all ${
-                  isSelected
-                    ? "bg-primary text-primary-foreground ring-2 ring-primary shadow-lg scale-105"
-                    : "bg-card hover:bg-surface-elevated border border-border/30"
-                }`}
-              >
-                <p className={`text-base font-bold ${isSelected ? "" : "text-foreground"}`}>{chord.label}</p>
-                <p className={`text-[10px] mt-0.5 ${isSelected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                  {chord.voicings.length} voicing{chord.voicings.length !== 1 ? "s" : ""}
-                </p>
-              </button>
-            );
-          })}
-        </div>
+        {chordRows.map((row, rowIdx) => (
+          <div key={rowIdx}>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mb-2">
+              {row.map(chord => {
+                const id = `${chord.key}-${chord.suffix}`;
+                const isExpanded = expandedChordId === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => handleChordSelect(chord)}
+                    className={`p-2.5 rounded-xl text-center transition-all ${
+                      isExpanded
+                        ? "bg-primary text-primary-foreground ring-2 ring-primary shadow-lg scale-105"
+                        : "bg-card hover:bg-surface-elevated border border-border/30"
+                    }`}
+                  >
+                    <p className={`text-base font-bold ${isExpanded ? "" : "text-foreground"}`}>{chord.label}</p>
+                    <p className={`text-[10px] mt-0.5 ${isExpanded ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      {chord.voicings.length} voicing{chord.voicings.length !== 1 ? "s" : ""}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Inline expansion for this row */}
+            <AnimatePresence mode="wait">
+              {row.some(c => `${c.key}-${c.suffix}` === expandedChordId) && (() => {
+                const chord = row.find(c => `${c.key}-${c.suffix}` === expandedChordId)!;
+                return (
+                  <motion.div
+                    key={expandedChordId}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden mb-2"
+                  >
+                    <InlineVoicingPanel chord={chord} playChord={playChord} />
+                  </motion.div>
+                );
+              })()}
+            </AnimatePresence>
+          </div>
+        ))}
 
         {filteredChords.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
@@ -188,90 +211,6 @@ const Index = () => {
             </button>
           </motion.div>
         )}
-
-        {/* Selected chord voicings */}
-        <AnimatePresence mode="wait">
-          {selectedChord && (
-            <motion.div
-              key={`${selectedChord.key}-${selectedChord.suffix}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.2 }}
-              className="bg-card rounded-2xl p-4 border border-border/50"
-            >
-              <h2 className="text-2xl font-bold text-foreground mb-1">{selectedChord.label}</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                {selectedChord.voicings.length} voicing{selectedChord.voicings.length !== 1 ? "s" : ""} available
-              </p>
-
-              {/* Voicing pills */}
-              <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-                {selectedChord.voicings.map((v, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveVoicing(i)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                      i === activeVoicing
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Large diagram */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeVoicing}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex justify-center"
-                >
-                  <ChordDiagram voicing={selectedChord.voicings[activeVoicing]} size="lg" />
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Play + positions */}
-              <div className="mt-3 flex items-center justify-center gap-3">
-                <button
-                  onClick={() => playChord(selectedChord.voicings[activeVoicing])}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
-                >
-                  <Volume2 className="w-4 h-4" />
-                  Play
-                </button>
-                <p className="text-xs text-muted-foreground font-mono tracking-wide">
-                  {selectedChord.voicings[activeVoicing].positions.map(p =>
-                    p === -1 ? "x" : p.toString()
-                  ).join(" · ")}
-                </p>
-              </div>
-
-              {/* Voicing grid thumbnails */}
-              <div className="grid grid-cols-5 gap-2 mt-4 pt-4 border-t border-border/30">
-                {selectedChord.voicings.map((v, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveVoicing(i)}
-                    className={`p-2 rounded-xl border transition-colors ${
-                      i === activeVoicing
-                        ? "border-primary bg-primary/10"
-                        : "border-border/30 bg-secondary/30 hover:border-muted-foreground/30"
-                    }`}
-                  >
-                    <ChordDiagram voicing={v} size="sm" />
-                    <p className="text-[9px] text-muted-foreground mt-1 text-center truncate">{v.name}</p>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <div className="h-20" />
       </main>
@@ -288,5 +227,71 @@ const Index = () => {
     </div>
   );
 };
+
+/** Inline voicing expansion panel showing all voicings with diagrams */
+function InlineVoicingPanel({ chord, playChord }: { chord: Chord; playChord: (v: any) => void }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  return (
+    <div className="bg-secondary/30 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm font-bold text-foreground">{chord.label}</span>
+        <span className="text-[10px] text-muted-foreground">
+          {chord.voicings.length} voicing{chord.voicings.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Large active diagram */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeIdx}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.15 }}
+          className="flex justify-center mb-3"
+        >
+          <ChordDiagram voicing={chord.voicings[activeIdx]} size="lg" />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Play button + positions */}
+      <div className="flex items-center justify-center gap-3 mb-3">
+        <button
+          onClick={() => playChord(chord.voicings[activeIdx])}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
+        >
+          <Volume2 className="w-4 h-4" />
+          Play
+        </button>
+        <p className="text-xs text-muted-foreground font-mono tracking-wide">
+          {chord.voicings[activeIdx].positions.map(p =>
+            p === -1 ? "x" : p.toString()
+          ).join(" · ")}
+        </p>
+      </div>
+
+      {/* Voicing thumbnails */}
+      <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        {chord.voicings.map((v, i) => (
+          <button
+            key={i}
+            onClick={() => { setActiveIdx(i); playChord(v); }}
+            className={`flex flex-col items-center p-2 rounded-xl transition-colors flex-shrink-0 ${
+              i === activeIdx
+                ? "bg-primary/10 ring-1 ring-primary/30"
+                : "hover:bg-secondary/50"
+            }`}
+          >
+            <div className="w-[60px]">
+              <ChordDiagram voicing={v} size="sm" />
+            </div>
+            <span className="text-[9px] text-muted-foreground mt-1 truncate max-w-[60px]">{v.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default Index;

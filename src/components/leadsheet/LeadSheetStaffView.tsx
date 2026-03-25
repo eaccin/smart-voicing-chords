@@ -22,11 +22,14 @@ interface LeadSheetStaffViewProps {
   title?: string;
   artist?: string;
   clef?: "treble" | "bass";
+  activeMeasureIndex?: number;
+  activeBeat?: number;
 }
 
 /** Renders a single system (one row of staff with measures) */
 function StaffSystem({
   system, sysIdx, totalSystems, staffY, systemY, svgWidth, meter, allMeasures, clef,
+  activeMeasureIndex, activeBeat,
 }: {
   system: SystemData;
   sysIdx: number;
@@ -37,6 +40,8 @@ function StaffSystem({
   meter: Meter;
   allMeasures: LeadSheetMeasure[];
   clef: "treble" | "bass";
+  activeMeasureIndex?: number;
+  activeBeat?: number;
 }) {
   const availableWidth = svgWidth - MARGIN_LEFT - MARGIN_RIGHT;
   const prefixWidth = CLEF_WIDTH + (system.showTimeSig ? TIME_SIG_WIDTH : 0);
@@ -78,8 +83,36 @@ function StaffSystem({
         const isRepeat = mData.measure.isRepeat;
         const isLast = sysIdx === totalSystems - 1 && mIdx === system.measures.length - 1;
 
+        const isActive = activeMeasureIndex === mData.measureIndex;
+
         return (
           <g key={mData.measure.id}>
+            {/* Active measure highlight */}
+            {isActive && (
+              <rect
+                x={mx + 1}
+                y={staffY - 16}
+                width={measureWidth - 2}
+                height={STAFF_HEIGHT + 32}
+                rx={4}
+                fill="hsl(var(--primary) / 0.1)"
+                stroke="hsl(var(--primary) / 0.3)"
+                strokeWidth={1.5}
+              />
+            )}
+
+            {/* Beat cursor within active measure */}
+            {isActive && activeBeat !== undefined && activeBeat >= 0 && (
+              <rect
+                x={mx + (measureWidth * activeBeat) / meter.beatsPerMeasure + 2}
+                y={staffY - 4}
+                width={measureWidth / meter.beatsPerMeasure - 4}
+                height={STAFF_HEIGHT + 8}
+                rx={3}
+                fill="hsl(var(--primary) / 0.15)"
+              />
+            )}
+
             {!isRepeat && chords.map((chord, cIdx) => {
               const chordX = chords.length === 1
                 ? mx + measureWidth * 0.1
@@ -109,7 +142,7 @@ function StaffSystem({
   );
 }
 
-export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble" }: LeadSheetStaffViewProps) {
+export default function LeadSheetStaffView({ sheet, meter, title, artist, clef = "treble", activeMeasureIndex, activeBeat }: LeadSheetStaffViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
 
@@ -201,6 +234,8 @@ export default function LeadSheetStaffView({ sheet, meter, title, artist, clef =
             meter={meter}
             allMeasures={allMeasures}
             clef={clef}
+            activeMeasureIndex={activeMeasureIndex}
+            activeBeat={activeBeat}
           />
         ))}
       </svg>
