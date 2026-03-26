@@ -252,73 +252,73 @@ const pianoChordData: PianoChord[] = [
   ]},
 
   // === MAJ7 ===
-  { key: "C", suffix: "maj7", label: "Cmaj7", voicings: [
-    pv("Root", n("C", 0, 4, 7, 11)),
-    pv("1st Inv", n("C", 4, 7, 11, 12)),
-  ]},
-  { key: "D", suffix: "maj7", label: "Dmaj7", voicings: [
-    pv("Root", n("D", 0, 4, 7, 11)),
-    pv("1st Inv", n("D", 4, 7, 11, 12)),
-  ]},
-  { key: "Eb", suffix: "maj7", label: "Ebmaj7", voicings: [
-    pv("Root", n("Eb", 0, 4, 7, 11)),
-    pv("1st Inv", n("Eb", 4, 7, 11, 12)),
-  ]},
-  { key: "F", suffix: "maj7", label: "Fmaj7", voicings: [
-    pv("Root", n("F", 0, 4, 7, 11)),
-    pv("1st Inv", n("F", 4, 7, 11, 12)),
-  ]},
-  { key: "G", suffix: "maj7", label: "Gmaj7", voicings: [
-    pv("Root", n("G", 0, 4, 7, 11)),
-    pv("1st Inv", n("G", 4, 7, 11, 12)),
-  ]},
-  { key: "A", suffix: "maj7", label: "Amaj7", voicings: [
-    pv("Root", n("A", 0, 4, 7, 11)),
-    pv("1st Inv", n("A", 4, 7, 11, 12)),
-  ]},
-  { key: "Bb", suffix: "maj7", label: "Bbmaj7", voicings: [
-    pv("Root", n("Bb", 0, 4, 7, 11)),
-    pv("1st Inv", n("Bb", 4, 7, 11, 12)),
-  ]},
-  { key: "B", suffix: "maj7", label: "Bmaj7", voicings: [
-    pv("Root", n("B", 0, 4, 7, 11)),
-    pv("1st Inv", n("B", 4, 7, 11, 12)),
-  ]},
+  { key: "C", suffix: "maj7", label: "Cmaj7", voicings: [pv("Root", n("C", 0, 4, 7, 11)), pv("1st Inv", n("C", 4, 7, 11, 12))] },
+  { key: "C#", suffix: "maj7", label: "C#maj7", voicings: [pv("Root", n("C#", 0, 4, 7, 11)), pv("1st Inv", n("C#", 4, 7, 11, 12))] },
+  { key: "D", suffix: "maj7", label: "Dmaj7", voicings: [pv("Root", n("D", 0, 4, 7, 11)), pv("1st Inv", n("D", 4, 7, 11, 12))] },
+  { key: "Eb", suffix: "maj7", label: "Ebmaj7", voicings: [pv("Root", n("Eb", 0, 4, 7, 11)), pv("1st Inv", n("Eb", 4, 7, 11, 12))] },
+  { key: "E", suffix: "maj7", label: "Emaj7", voicings: [pv("Root", n("E", 0, 4, 7, 11)), pv("1st Inv", n("E", 4, 7, 11, 12))] },
+  { key: "F", suffix: "maj7", label: "Fmaj7", voicings: [pv("Root", n("F", 0, 4, 7, 11)), pv("1st Inv", n("F", 4, 7, 11, 12))] },
+  { key: "F#", suffix: "maj7", label: "F#maj7", voicings: [pv("Root", n("F#", 0, 4, 7, 11)), pv("1st Inv", n("F#", 4, 7, 11, 12))] },
+  { key: "G", suffix: "maj7", label: "Gmaj7", voicings: [pv("Root", n("G", 0, 4, 7, 11)), pv("1st Inv", n("G", 4, 7, 11, 12))] },
+  { key: "Ab", suffix: "maj7", label: "Abmaj7", voicings: [pv("Root", n("Ab", 0, 4, 7, 11)), pv("1st Inv", n("Ab", 4, 7, 11, 12))] },
+  { key: "A", suffix: "maj7", label: "Amaj7", voicings: [pv("Root", n("A", 0, 4, 7, 11)), pv("1st Inv", n("A", 4, 7, 11, 12))] },
+  { key: "Bb", suffix: "maj7", label: "Bbmaj7", voicings: [pv("Root", n("Bb", 0, 4, 7, 11)), pv("1st Inv", n("Bb", 4, 7, 11, 12))] },
+  { key: "B", suffix: "maj7", label: "Bmaj7", voicings: [pv("Root", n("B", 0, 4, 7, 11)), pv("1st Inv", n("B", 4, 7, 11, 12))] },
 
   // === DIM ===
   { key: "C", suffix: "dim", label: "Cdim", voicings: [pv("Root", n("C", 0, 3, 6))] },
+  { key: "C#", suffix: "dim", label: "C#dim", voicings: [pv("Root", n("C#", 0, 3, 6))] },
   { key: "D", suffix: "dim", label: "Ddim", voicings: [pv("Root", n("D", 0, 3, 6))] },
+  { key: "Eb", suffix: "dim", label: "Ebdim", voicings: [pv("Root", n("Eb", 0, 3, 6))] },
   { key: "E", suffix: "dim", label: "Edim", voicings: [pv("Root", n("E", 0, 3, 6))] },
   { key: "F", suffix: "dim", label: "Fdim", voicings: [pv("Root", n("F", 0, 3, 6))] },
+  { key: "F#", suffix: "dim", label: "F#dim", voicings: [pv("Root", n("F#", 0, 3, 6))] },
   { key: "G", suffix: "dim", label: "Gdim", voicings: [pv("Root", n("G", 0, 3, 6))] },
+  { key: "Ab", suffix: "dim", label: "Abdim", voicings: [pv("Root", n("Ab", 0, 3, 6))] },
   { key: "A", suffix: "dim", label: "Adim", voicings: [pv("Root", n("A", 0, 3, 6))] },
+  { key: "Bb", suffix: "dim", label: "Bbdim", voicings: [pv("Root", n("Bb", 0, 3, 6))] },
   { key: "B", suffix: "dim", label: "Bdim", voicings: [pv("Root", n("B", 0, 3, 6))] },
 
   // === AUG ===
   { key: "C", suffix: "aug", label: "Caug", voicings: [pv("Root", n("C", 0, 4, 8))] },
+  { key: "C#", suffix: "aug", label: "C#aug", voicings: [pv("Root", n("C#", 0, 4, 8))] },
   { key: "D", suffix: "aug", label: "Daug", voicings: [pv("Root", n("D", 0, 4, 8))] },
+  { key: "Eb", suffix: "aug", label: "Ebaug", voicings: [pv("Root", n("Eb", 0, 4, 8))] },
   { key: "E", suffix: "aug", label: "Eaug", voicings: [pv("Root", n("E", 0, 4, 8))] },
   { key: "F", suffix: "aug", label: "Faug", voicings: [pv("Root", n("F", 0, 4, 8))] },
+  { key: "F#", suffix: "aug", label: "F#aug", voicings: [pv("Root", n("F#", 0, 4, 8))] },
   { key: "G", suffix: "aug", label: "Gaug", voicings: [pv("Root", n("G", 0, 4, 8))] },
+  { key: "Ab", suffix: "aug", label: "Abaug", voicings: [pv("Root", n("Ab", 0, 4, 8))] },
   { key: "A", suffix: "aug", label: "Aaug", voicings: [pv("Root", n("A", 0, 4, 8))] },
+  { key: "Bb", suffix: "aug", label: "Bbaug", voicings: [pv("Root", n("Bb", 0, 4, 8))] },
   { key: "B", suffix: "aug", label: "Baug", voicings: [pv("Root", n("B", 0, 4, 8))] },
 
   // === SUS4 ===
   { key: "C", suffix: "sus4", label: "Csus4", voicings: [pv("Root", n("C", 0, 5, 7))] },
+  { key: "C#", suffix: "sus4", label: "C#sus4", voicings: [pv("Root", n("C#", 0, 5, 7))] },
   { key: "D", suffix: "sus4", label: "Dsus4", voicings: [pv("Root", n("D", 0, 5, 7))] },
+  { key: "Eb", suffix: "sus4", label: "Ebsus4", voicings: [pv("Root", n("Eb", 0, 5, 7))] },
   { key: "E", suffix: "sus4", label: "Esus4", voicings: [pv("Root", n("E", 0, 5, 7))] },
   { key: "F", suffix: "sus4", label: "Fsus4", voicings: [pv("Root", n("F", 0, 5, 7))] },
+  { key: "F#", suffix: "sus4", label: "F#sus4", voicings: [pv("Root", n("F#", 0, 5, 7))] },
   { key: "G", suffix: "sus4", label: "Gsus4", voicings: [pv("Root", n("G", 0, 5, 7))] },
+  { key: "Ab", suffix: "sus4", label: "Absus4", voicings: [pv("Root", n("Ab", 0, 5, 7))] },
   { key: "A", suffix: "sus4", label: "Asus4", voicings: [pv("Root", n("A", 0, 5, 7))] },
+  { key: "Bb", suffix: "sus4", label: "Bbsus4", voicings: [pv("Root", n("Bb", 0, 5, 7))] },
   { key: "B", suffix: "sus4", label: "Bsus4", voicings: [pv("Root", n("B", 0, 5, 7))] },
 
   // === SUS2 ===
   { key: "C", suffix: "sus2", label: "Csus2", voicings: [pv("Root", n("C", 0, 2, 7))] },
+  { key: "C#", suffix: "sus2", label: "C#sus2", voicings: [pv("Root", n("C#", 0, 2, 7))] },
   { key: "D", suffix: "sus2", label: "Dsus2", voicings: [pv("Root", n("D", 0, 2, 7))] },
+  { key: "Eb", suffix: "sus2", label: "Ebsus2", voicings: [pv("Root", n("Eb", 0, 2, 7))] },
   { key: "E", suffix: "sus2", label: "Esus2", voicings: [pv("Root", n("E", 0, 2, 7))] },
   { key: "F", suffix: "sus2", label: "Fsus2", voicings: [pv("Root", n("F", 0, 2, 7))] },
+  { key: "F#", suffix: "sus2", label: "F#sus2", voicings: [pv("Root", n("F#", 0, 2, 7))] },
   { key: "G", suffix: "sus2", label: "Gsus2", voicings: [pv("Root", n("G", 0, 2, 7))] },
+  { key: "Ab", suffix: "sus2", label: "Absus2", voicings: [pv("Root", n("Ab", 0, 2, 7))] },
   { key: "A", suffix: "sus2", label: "Asus2", voicings: [pv("Root", n("A", 0, 2, 7))] },
+  { key: "Bb", suffix: "sus2", label: "Bbsus2", voicings: [pv("Root", n("Bb", 0, 2, 7))] },
   { key: "B", suffix: "sus2", label: "Bsus2", voicings: [pv("Root", n("B", 0, 2, 7))] },
 ];
 
