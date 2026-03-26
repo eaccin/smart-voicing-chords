@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Guitar, Music2, Zap, Piano } from "lucide-react";
+import { Guitar, Music2, Zap, Piano, BookOpen } from "lucide-react";
 
 const tabs = [
-  { path: "/", label: "Guitar", icon: Guitar },
+  { path: "/", label: "Guide", icon: BookOpen },
+  { path: "/guitar", label: "Guitar", icon: Guitar },
   { path: "/piano", label: "Piano", icon: Piano },
   { path: "/engine", label: "Engine", icon: Zap },
   { path: "/songs", label: "Songs", icon: Music2 },
@@ -12,8 +13,6 @@ export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide on song editor (when a song is being edited the editor takes over)
-  // Show on main routes only
   const isMainRoute = tabs.some(t => t.path === location.pathname);
   if (!isMainRoute) return null;
 

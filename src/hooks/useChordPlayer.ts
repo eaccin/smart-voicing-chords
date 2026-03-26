@@ -1,5 +1,6 @@
-import { useRef, useCallback } from "react";
+import { useCallback } from "react";
 import type { ChordVoicing } from "@/data/chords";
+import { getSharedAudioContext } from "@/hooks/useAudioContext";
 
 // Standard tuning MIDI note numbers: E2=40, A2=45, D3=50, G3=55, B3=59, E4=64
 const OPEN_STRING_MIDI = [40, 45, 50, 55, 59, 64];
@@ -20,20 +21,8 @@ function getChordFrequencies(voicing: ChordVoicing): number[] {
 }
 
 export function useChordPlayer() {
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  const getCtx = useCallback(() => {
-    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
-      audioCtxRef.current = new AudioContext();
-    }
-    if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume().catch(() => {});
-    }
-    return audioCtxRef.current;
-  }, []);
-
   const playChord = useCallback((voicing: ChordVoicing, duration = 1.5) => {
-    const ctx = getCtx();
+    const ctx = getSharedAudioContext();
     const freqs = getChordFrequencies(voicing);
     if (freqs.length === 0) return;
 
@@ -41,10 +30,8 @@ export function useChordPlayer() {
     const gainPerNote = 0.18 / Math.sqrt(freqs.length);
 
     freqs.forEach((freq, i) => {
-      // Stagger notes slightly for strum effect
       const startTime = now + i * 0.025;
 
-      // Fundamental
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "triangle";
@@ -60,7 +47,6 @@ export function useChordPlayer() {
       osc.start(startTime);
       osc.stop(startTime + duration + 0.05);
 
-      // Soft harmonic overtone for richness
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = "sine";
@@ -75,7 +61,7 @@ export function useChordPlayer() {
       osc2.start(startTime);
       osc2.stop(startTime + duration + 0.05);
     });
-  }, [getCtx]);
+  }, []);
 
   return { playChord };
 }
