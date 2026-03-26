@@ -206,9 +206,17 @@ const pianoChordData: PianoChord[] = [
     pv("Root", n("C", 0, 3, 7, 10)),
     pv("1st Inv", n("C", 3, 7, 10, 12)),
   ]},
+  { key: "C#", suffix: "m7", label: "C#m7", voicings: [
+    pv("Root", n("C#", 0, 3, 7, 10)),
+    pv("1st Inv", n("C#", 3, 7, 10, 12)),
+  ]},
   { key: "D", suffix: "m7", label: "Dm7", voicings: [
     pv("Root", n("D", 0, 3, 7, 10)),
     pv("1st Inv", n("D", 3, 7, 10, 12)),
+  ]},
+  { key: "Eb", suffix: "m7", label: "Ebm7", voicings: [
+    pv("Root", n("Eb", 0, 3, 7, 10)),
+    pv("1st Inv", n("Eb", 3, 7, 10, 12)),
   ]},
   { key: "E", suffix: "m7", label: "Em7", voicings: [
     pv("Root", n("E", 0, 3, 7, 10)),
@@ -218,13 +226,25 @@ const pianoChordData: PianoChord[] = [
     pv("Root", n("F", 0, 3, 7, 10)),
     pv("1st Inv", n("F", 3, 7, 10, 12)),
   ]},
+  { key: "F#", suffix: "m7", label: "F#m7", voicings: [
+    pv("Root", n("F#", 0, 3, 7, 10)),
+    pv("1st Inv", n("F#", 3, 7, 10, 12)),
+  ]},
   { key: "G", suffix: "m7", label: "Gm7", voicings: [
     pv("Root", n("G", 0, 3, 7, 10)),
     pv("1st Inv", n("G", 3, 7, 10, 12)),
   ]},
+  { key: "Ab", suffix: "m7", label: "Abm7", voicings: [
+    pv("Root", n("Ab", 0, 3, 7, 10)),
+    pv("1st Inv", n("Ab", 3, 7, 10, 12)),
+  ]},
   { key: "A", suffix: "m7", label: "Am7", voicings: [
     pv("Root", n("A", 0, 3, 7, 10)),
     pv("1st Inv", n("A", 3, 7, 10, 12)),
+  ]},
+  { key: "Bb", suffix: "m7", label: "Bbm7", voicings: [
+    pv("Root", n("Bb", 0, 3, 7, 10)),
+    pv("1st Inv", n("Bb", 3, 7, 10, 12)),
   ]},
   { key: "B", suffix: "m7", label: "Bm7", voicings: [
     pv("Root", n("B", 0, 3, 7, 10)),
