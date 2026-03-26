@@ -51,6 +51,17 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
     setSelectedVoicing(0);
   }
 
+  function handleQuickInsert(id: string) {
+    const chord = allChords.find(c => `${c.key}-${c.suffix}` === id);
+    if (!chord) return;
+    onPick({
+      label: chord.label,
+      chordKey: chord.key,
+      suffix: chord.suffix,
+      voicingIndex: 0,
+    });
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -169,6 +180,7 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
                     <button
                       key={id}
                       onClick={() => { setSelectedChordId(id); setSelectedVoicing(0); }}
+                      onDoubleClick={() => handleQuickInsert(id)}
                       className="p-3 rounded-xl bg-card hover:bg-surface-elevated transition-colors text-center"
                     >
                       <p className="text-sm font-bold text-foreground">{c.label}</p>
