@@ -149,7 +149,7 @@ export default function LeadSheetEditor({ sheet, meter, onChange }: LeadSheetEdi
             ))}
             <button
               onClick={() => addMeasure(rowIdx)}
-              className="w-10 h-16 flex items-center justify-center rounded-lg border border-dashed border-border/50 text-muted-foreground/40 hover:text-muted-foreground hover:border-border transition-colors"
+              className="w-12 sm:w-10 h-20 sm:h-16 flex items-center justify-center rounded-lg border border-dashed border-border/50 text-muted-foreground/40 hover:text-muted-foreground hover:border-border transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -233,7 +233,7 @@ function MeasureCell({
   return (
     <div className="relative group">
       <div
-        className={`h-16 min-w-[80px] flex items-end rounded-lg border overflow-hidden transition-colors ${
+        className={`h-20 sm:h-16 min-w-[100px] sm:min-w-[80px] flex items-end rounded-lg border overflow-hidden transition-colors ${
           isActive ? "border-primary bg-primary/5" : "border-border/50 bg-card"
         }`}
       >
@@ -274,7 +274,7 @@ function MeasureCell({
                     } catch {}
                   }}
                   onClick={() => chord ? onRemoveChord(beat) : onBeatClick(beat)}
-                  className={`flex-1 h-full flex items-center justify-center text-[11px] font-bold rounded transition-colors cursor-${chord ? "grab" : "pointer"} ${
+                  className={`flex-1 h-full flex items-center justify-center text-xs sm:text-[11px] font-bold rounded transition-colors cursor-${chord ? "grab" : "pointer"} ${
                     isDragOver
                       ? "ring-1 ring-primary bg-primary/10"
                       : chord
