@@ -209,7 +209,7 @@ function MeasureCell({
     return (
       <div className="relative group">
         <div
-          className={`h-16 min-w-[80px] flex items-center justify-center rounded-lg border transition-colors ${
+          className={`h-20 sm:h-16 min-w-[100px] sm:min-w-[80px] flex items-center justify-center rounded-lg border transition-colors ${
             isActive ? "border-primary bg-primary/10" : "border-border/50 bg-card"
           }`}
         >
