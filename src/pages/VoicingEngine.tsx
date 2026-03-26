@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ArrowRight, FolderOpen } from "lucide-react";
+import { Zap, ArrowRight, FolderOpen, Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { ProgressionChord, VoicingPath } from "@/engine/voicingEngine";
 import { generateVoicingPaths } from "@/engine/voicingEngine";
@@ -10,6 +10,36 @@ import ProgressionInput from "@/components/engine/ProgressionInput";
 import VoicingPathResults from "@/components/engine/VoicingPathResults";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
+const ALL_KEYS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+
+// Semitone offsets from root
+const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+const MAJOR_QUALITIES = ["major", "minor", "minor", "major", "major", "minor", "dim"];
+const MAJOR_LABELS = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
+
+const MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
+const MINOR_QUALITIES = ["minor", "dim", "major", "minor", "minor", "major", "major"];
+const MINOR_LABELS = ["i", "ii°", "III", "iv", "v", "VI", "VII"];
+
+function getHarmonicField(key: string): { label: string; roman: string; chordKey: string; suffix: string }[] {
+  const isMinor = key.endsWith("m");
+  const root = isMinor ? key.slice(0, -1) : key;
+  const rootIdx = ALL_KEYS.indexOf(root);
+  if (rootIdx === -1) return [];
+
+  const scale = isMinor ? MINOR_SCALE : MAJOR_SCALE;
+  const qualities = isMinor ? MINOR_QUALITIES : MAJOR_QUALITIES;
+  const romans = isMinor ? MINOR_LABELS : MAJOR_LABELS;
+
+  return scale.map((semitone, i) => {
+    const noteIdx = (rootIdx + semitone) % 12;
+    const noteName = ALL_KEYS[noteIdx];
+    const suffix = qualities[i];
+    const label = suffix === "major" ? noteName : suffix === "minor" ? `${noteName}m` : `${noteName}dim`;
+    return { label, roman: romans[i], chordKey: noteName, suffix };
+  });
+}
+
 export default function VoicingEngine() {
   const navigate = useNavigate();
   const [progression, setProgression] = useState<ProgressionChord[]>([]);
@@ -17,6 +47,12 @@ export default function VoicingEngine() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [loadOpen, setLoadOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState("");
+
+  const harmonicField = useMemo(() => {
+    if (!selectedKey) return [];
+    return getHarmonicField(selectedKey);
+  }, [selectedKey]);
 
   function handleGenerate() {
     if (progression.length < 2) return;
@@ -26,7 +62,6 @@ export default function VoicingEngine() {
   }
 
   function handleLoadSong(song: Song) {
-    // Collect all chords from all sections
     const chords: ProgressionChord[] = [];
     for (const section of song.sections) {
       for (const sc of section.chords) {
@@ -39,6 +74,12 @@ export default function VoicingEngine() {
       setHasGenerated(false);
     }
     setLoadOpen(false);
+  }
+
+  function handleAddFromField(chord: { label: string; chordKey: string; suffix: string }) {
+    setProgression(prev => [...prev, { key: chord.chordKey, suffix: chord.suffix, label: chord.label }]);
+    setPaths([]);
+    setHasGenerated(false);
   }
 
   const handleSave = useCallback((path: VoicingPath) => {
@@ -85,7 +126,72 @@ export default function VoicingEngine() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4 pb-24 space-y-6">
-        {/* Intro */}
+        {/* Key selector + Harmonic Field */}
+        <div className="p-4 bg-card rounded-2xl border border-border/50">
+          <div className="flex items-center gap-2 mb-3">
+            <Music className="w-4 h-4 text-primary" />
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Key & Harmonic Field</p>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-2">
+            {ALL_KEYS.map(k => (
+              <button
+                key={k}
+                onClick={() => setSelectedKey(prev => prev === k ? "" : k)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                  selectedKey === k ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+            {ALL_KEYS.map(k => {
+              const mk = `${k}m`;
+              return (
+                <button
+                  key={mk}
+                  onClick={() => setSelectedKey(prev => prev === mk ? "" : mk)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedKey === mk ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {mk}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Harmonic field display */}
+          <AnimatePresence>
+            {harmonicField.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <p className="text-[10px] text-muted-foreground mt-3 mb-2">
+                  Tap a chord to add it to the progression:
+                </p>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {harmonicField.map((chord, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleAddFromField(chord)}
+                      className="flex flex-col items-center p-2 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
+                    >
+                      <span className="text-[10px] font-bold text-primary mb-0.5">{chord.roman}</span>
+                      <span className="text-xs font-semibold text-foreground">{chord.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Chord Progression */}
         <div className="p-4 bg-card rounded-2xl border border-border/50">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
