@@ -1,41 +1,31 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { withSharedAudioContext } from "@/hooks/useAudioContext";
 
 export function useMetronome() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const timerRef = useRef<number | null>(null);
   const beatRef = useRef(0);
 
-  const getAudioCtx = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
-    }
-    return audioCtxRef.current;
-  }, []);
-
   const playClick = useCallback((isAccent: boolean) => {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    withSharedAudioContext(isAccent ? "metronome-accent" : "metronome-beat", (ctx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    osc.frequency.value = isAccent ? 1000 : 700;
-    osc.type = "sine";
-    gain.gain.setValueAtTime(isAccent ? 0.6 : 0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.frequency.value = isAccent ? 1000 : 700;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(isAccent ? 0.6 : 0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
 
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.08);
-  }, [getAudioCtx]);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
+    });
+  }, []);
 
   const start = useCallback((bpm: number, beatsPerMeasure: number) => {
     if (bpm <= 0) return;
-    const ctx = getAudioCtx();
-    if (ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
 
     // Inline stop to avoid stale closure
     if (timerRef.current !== null) {
@@ -56,7 +46,7 @@ export function useMetronome() {
       setCurrentBeat(beatRef.current);
       playClick(beatRef.current === 0);
     }, interval);
-  }, [getAudioCtx, playClick]);
+  }, [playClick]);
 
   const stop = useCallback(() => {
     if (timerRef.current !== null) {
@@ -71,10 +61,6 @@ export function useMetronome() {
   useEffect(() => {
     return () => {
       stop();
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-        audioCtxRef.current = null;
-      }
     };
   }, [stop]);
 

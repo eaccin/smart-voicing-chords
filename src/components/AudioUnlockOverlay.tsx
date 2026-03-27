@@ -1,22 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Volume2 } from "lucide-react";
-import { isAudioUnlocked, unlockAudio } from "@/hooks/useAudioContext";
+import {
+  armAudioUnlockOnNextGesture,
+  isAudioUnlocked,
+  shouldShowAudioUnlockOverlay,
+  unlockAudio,
+} from "@/hooks/useAudioContext";
 
 export default function AudioUnlockOverlay() {
-  const [visible, setVisible] = useState(!isAudioUnlocked());
+  const [visible, setVisible] = useState(shouldShowAudioUnlockOverlay());
+
+  useEffect(() => {
+    if (visible || isAudioUnlocked()) return;
+    return armAudioUnlockOnNextGesture();
+  }, [visible]);
 
   if (!visible) return null;
 
   async function handleTap() {
-    await unlockAudio();
-    setVisible(false);
+    try {
+      await unlockAudio("overlay-button");
+      setVisible(false);
+    } catch {
+      setVisible(true);
+    }
   }
 
   return (
     <div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/95 backdrop-blur-md"
-      onClick={handleTap}
-      onTouchEnd={handleTap}
     >
       <div className="flex flex-col items-center gap-4 p-8">
         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
@@ -27,6 +39,8 @@ export default function AudioUnlockOverlay() {
           Audio playback requires a user interaction to start on mobile devices.
         </p>
         <button
+          type="button"
+          onClick={handleTap}
           className="mt-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
         >
           Enable Audio
