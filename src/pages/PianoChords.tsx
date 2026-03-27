@@ -184,7 +184,7 @@ function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
           transition={{ duration: 0.15 }}
           className="flex justify-center mb-3"
         >
-          <PianoDiagram voicing={chord.voicings[activeIdx]} size="lg" />
+          <PianoDiagram voicing={chord.voicings[activeIdx]} size="lg" useSharpNames={useSharps} />
         </motion.div>
       </AnimatePresence>
 
@@ -206,7 +206,7 @@ function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
             }`}
           >
             <div className="w-[80px]">
-              <PianoDiagram voicing={v} size="sm" />
+              <PianoDiagram voicing={v} size="sm" useSharpNames={useSharps} />
             </div>
             <span className="text-[9px] text-muted-foreground mt-1">{v.name}</span>
           </button>
