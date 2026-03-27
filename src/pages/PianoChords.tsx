@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Piano, Volume2 } from "lucide-react";
+import { Search, Piano } from "lucide-react";
 import {
   getAllPianoChords, searchPianoChords,
   pianoRootNotes, pianoSuffixes, pianoSuffixLabels,
 } from "@/data/pianoChords";
-import type { PianoChord, PianoChordVoicing } from "@/data/pianoChords";
+import type { PianoChord } from "@/data/pianoChords";
 import PianoDiagram from "@/components/PianoDiagram";
+import { getVoicingNoteNames } from "@/lib/music";
 
 const PianoChords = () => {
   const [query, setQuery] = useState("");
@@ -152,19 +153,12 @@ const PianoChords = () => {
   );
 };
 
-const SHARP_ROOTS = new Set(["C", "C#", "D", "E", "F#", "G", "A", "B"]);
-
 function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const useSharps = SHARP_ROOTS.has(chord.key);
-
-  const noteNames = chord.voicings[activeIdx].notes.map(midi => {
-    const sharpNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    const flatNames  = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-    const names = useSharps ? sharpNames : flatNames;
-    const octave = Math.floor(midi / 12) - 1;
-    return `${names[midi % 12]}${octave}`;
-  });
+  const noteNames = useMemo(
+    () => getVoicingNoteNames(chord.key, chord.suffix, chord.voicings[activeIdx].notes),
+    [activeIdx, chord.key, chord.suffix, chord.voicings],
+  );
 
   return (
     <div className="bg-secondary/30 rounded-xl p-4">
@@ -184,7 +178,7 @@ function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
           transition={{ duration: 0.15 }}
           className="flex justify-center mb-3"
         >
-          <PianoDiagram voicing={chord.voicings[activeIdx]} size="lg" useSharpNames={useSharps} />
+          <PianoDiagram voicing={chord.voicings[activeIdx]} size="lg" noteLabels={noteNames} />
         </motion.div>
       </AnimatePresence>
 
@@ -206,7 +200,7 @@ function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
             }`}
           >
             <div className="w-[80px]">
-              <PianoDiagram voicing={v} size="sm" useSharpNames={useSharps} />
+              <PianoDiagram voicing={v} size="sm" noteLabels={getVoicingNoteNames(chord.key, chord.suffix, v.notes)} />
             </div>
             <span className="text-[9px] text-muted-foreground mt-1">{v.name}</span>
           </button>

@@ -3,7 +3,7 @@ import type { PianoChordVoicing } from "@/data/pianoChords";
 interface PianoDiagramProps {
   voicing: PianoChordVoicing;
   size?: "sm" | "lg";
-  useSharpNames?: boolean;
+  noteLabels?: string[];
 }
 
 // One octave of piano keys starting from C
@@ -19,15 +19,7 @@ function isBlackKey(semitone: number): boolean {
   return BLACK_KEY_SEMITONES.includes(semitone % 12);
 }
 
-const SHARP_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const FLAT_NAMES  = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-
-function getNoteName(midi: number, useSharps: boolean): string {
-  const names = useSharps ? SHARP_NAMES : FLAT_NAMES;
-  return names[midi % 12];
-}
-
-export default function PianoDiagram({ voicing, size = "lg", useSharpNames = false }: PianoDiagramProps) {
+export default function PianoDiagram({ voicing, size = "lg", noteLabels }: PianoDiagramProps) {
   const isLarge = size === "lg";
 
   // Determine range to show based on voicing notes
@@ -71,6 +63,7 @@ export default function PianoDiagram({ voicing, size = "lg", useSharpNames = fal
   const totalHeight = whiteKeyHeight + (isLarge ? 20 : 8);
 
   const activeNotes = new Set(voicing.notes);
+  const activeNoteLabels = new Map(voicing.notes.map((midi, index) => [midi, noteLabels?.[index] ?? ""]));
 
   return (
     <svg
@@ -104,7 +97,7 @@ export default function PianoDiagram({ voicing, size = "lg", useSharpNames = fal
                 fontFamily="'IBM Plex Mono', monospace"
                 fill="hsl(var(--primary-foreground))"
               >
-                {getNoteName(midi, useSharpNames)}
+                {activeNoteLabels.get(midi)}
               </text>
             )}
           </g>
@@ -137,7 +130,7 @@ export default function PianoDiagram({ voicing, size = "lg", useSharpNames = fal
                 fontFamily="'IBM Plex Mono', monospace"
                 fill="hsl(var(--accent-foreground))"
               >
-                {getNoteName(semitoneOffset, useSharpNames)}
+                {activeNoteLabels.get(semitoneOffset)}
               </text>
             )}
           </g>
