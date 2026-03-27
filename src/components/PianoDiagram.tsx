@@ -104,7 +104,7 @@ export default function PianoDiagram({ voicing, size = "lg", useSharpNames = fal
                 fontFamily="'IBM Plex Mono', monospace"
                 fill="hsl(var(--primary-foreground))"
               >
-                {getNoteName(midi)}
+                {getNoteName(midi, useSharpNames)}
               </text>
             )}
           </g>
@@ -137,7 +137,7 @@ export default function PianoDiagram({ voicing, size = "lg", useSharpNames = fal
                 fontFamily="'IBM Plex Mono', monospace"
                 fill="hsl(var(--accent-foreground))"
               >
-                {getNoteName(semitoneOffset)}
+                {getNoteName(semitoneOffset, useSharpNames)}
               </text>
             )}
           </g>
