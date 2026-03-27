@@ -3,6 +3,7 @@ import type { PianoChordVoicing } from "@/data/pianoChords";
 interface PianoDiagramProps {
   voicing: PianoChordVoicing;
   size?: "sm" | "lg";
+  useSharpNames?: boolean;
 }
 
 // One octave of piano keys starting from C
