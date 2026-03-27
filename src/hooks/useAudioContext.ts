@@ -16,7 +16,8 @@ export function isAudioUnlocked(): boolean {
 
 export function getSharedAudioContext(): AudioContext {
   if (!sharedCtx || sharedCtx.state === "closed") {
-    sharedCtx = new AudioContext();
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    sharedCtx = new Ctx();
   }
   if (sharedCtx.state === "suspended") {
     sharedCtx.resume().catch(() => {});

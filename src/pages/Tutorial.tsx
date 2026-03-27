@@ -29,7 +29,7 @@ export default function Tutorial() {
           icon={<Guitar className="w-5 h-5 text-primary" />}
           title="Guitar Chord Library"
           description="Browse all guitar chords by root note and type. Tap any chord to see its voicings and diagrams. Press Play to hear how it sounds. You can also create custom voicings."
-          action={() => navigate("/")}
+          action={() => navigate("/guitar")}
           actionLabel="Open Guitar Chords"
         />
 

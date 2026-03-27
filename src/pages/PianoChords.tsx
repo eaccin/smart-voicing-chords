@@ -152,11 +152,16 @@ const PianoChords = () => {
   );
 };
 
+const SHARP_ROOTS = new Set(["C", "C#", "D", "E", "F#", "G", "A", "B"]);
+
 function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const useSharps = SHARP_ROOTS.has(chord.key);
 
   const noteNames = chord.voicings[activeIdx].notes.map(midi => {
-    const names = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+    const sharpNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const flatNames  = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+    const names = useSharps ? sharpNames : flatNames;
     const octave = Math.floor(midi / 12) - 1;
     return `${names[midi % 12]}${octave}`;
   });
@@ -179,7 +184,7 @@ function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
           transition={{ duration: 0.15 }}
           className="flex justify-center mb-3"
         >
-          <PianoDiagram voicing={chord.voicings[activeIdx]} size="lg" />
+          <PianoDiagram voicing={chord.voicings[activeIdx]} size="lg" useSharpNames={useSharps} />
         </motion.div>
       </AnimatePresence>
 
@@ -201,7 +206,7 @@ function InlinePianoVoicingPanel({ chord }: { chord: PianoChord }) {
             }`}
           >
             <div className="w-[80px]">
-              <PianoDiagram voicing={v} size="sm" />
+              <PianoDiagram voicing={v} size="sm" useSharpNames={useSharps} />
             </div>
             <span className="text-[9px] text-muted-foreground mt-1">{v.name}</span>
           </button>

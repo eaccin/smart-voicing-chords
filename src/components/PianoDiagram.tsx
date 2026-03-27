@@ -3,6 +3,7 @@ import type { PianoChordVoicing } from "@/data/pianoChords";
 interface PianoDiagramProps {
   voicing: PianoChordVoicing;
   size?: "sm" | "lg";
+  useSharpNames?: boolean;
 }
 
 // One octave of piano keys starting from C
@@ -18,12 +19,15 @@ function isBlackKey(semitone: number): boolean {
   return BLACK_KEY_SEMITONES.includes(semitone % 12);
 }
 
-function getNoteName(midi: number): string {
-  const names = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const SHARP_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const FLAT_NAMES  = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
+function getNoteName(midi: number, useSharps: boolean): string {
+  const names = useSharps ? SHARP_NAMES : FLAT_NAMES;
   return names[midi % 12];
 }
 
-export default function PianoDiagram({ voicing, size = "lg" }: PianoDiagramProps) {
+export default function PianoDiagram({ voicing, size = "lg", useSharpNames = false }: PianoDiagramProps) {
   const isLarge = size === "lg";
 
   // Determine range to show based on voicing notes
@@ -100,7 +104,7 @@ export default function PianoDiagram({ voicing, size = "lg" }: PianoDiagramProps
                 fontFamily="'IBM Plex Mono', monospace"
                 fill="hsl(var(--primary-foreground))"
               >
-                {getNoteName(midi)}
+                {getNoteName(midi, useSharpNames)}
               </text>
             )}
           </g>
@@ -133,7 +137,7 @@ export default function PianoDiagram({ voicing, size = "lg" }: PianoDiagramProps
                 fontFamily="'IBM Plex Mono', monospace"
                 fill="hsl(var(--accent-foreground))"
               >
-                {getNoteName(semitoneOffset)}
+                {getNoteName(semitoneOffset, useSharpNames)}
               </text>
             )}
           </g>
