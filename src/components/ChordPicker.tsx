@@ -60,6 +60,9 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
       suffix: chord.suffix,
       voicingIndex: 0,
     });
+    setSelectedChordId(null);
+    setSelectedVoicing(0);
+    onClose();
   }
 
   return (
