@@ -20,10 +20,12 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
   const metronome = useMetronome();
   const { playChord } = useChordPlayer();
   const [playing, setPlaying] = useState(false);
+  const [countingIn, setCountingIn] = useState(false);
+  const [countInBars, setCountInBars] = useState(0);
   const [activeMeasure, setActiveMeasure] = useState(-1);
   const [activeBeat, setActiveBeat] = useState(-1);
   const timerRef = useRef<number | null>(null);
-  const stateRef = useRef({ measureIdx: 0, beat: 0 });
+  const stateRef = useRef({ measureIdx: 0, beat: 0, countInBeatsLeft: 0 });
 
   const sheet = song.leadSheet;
   if (!sheet) return null;
