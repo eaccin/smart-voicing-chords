@@ -597,45 +597,39 @@ function LoadSectionsToLeadSheetButton({
 
   function loadChords(chords: SongChord[], label?: string) {
     const measuresPerRow = song.leadSheet?.measuresPerRow ?? 4;
-    // Convert chords to lead sheet: 1 chord per measure, beat 0
     const lsChords: LeadSheetChord[] = chords.map(c => ({
-      label: c.label,
-      chordKey: c.chordKey,
-      suffix: c.suffix,
-      beat: 0,
-      voicingIndex: c.voicingIndex,
+      label: c.label, chordKey: c.chordKey, suffix: c.suffix, beat: 0, voicingIndex: c.voicingIndex,
     }));
-
-    // Create measures, one per chord
-    const measures = lsChords.map(chord => ({
-      id: createMeasureId(),
-      chords: [chord],
-    }));
-
-    // Group into rows
+    const measures = lsChords.map(chord => ({ id: createMeasureId(), chords: [chord] }));
     const rows: LeadSheet["rows"] = [];
     for (let i = 0; i < measures.length; i += measuresPerRow) {
       const rowMeasures = measures.slice(i, i + measuresPerRow);
-      // Pad to measuresPerRow
-      while (rowMeasures.length < measuresPerRow) {
-        rowMeasures.push(createEmptyMeasure());
-      }
-      rows.push({
-        id: createRowId(),
-        label: i === 0 ? (label || undefined) : undefined,
-        measures: rowMeasures,
-      });
+      while (rowMeasures.length < measuresPerRow) rowMeasures.push(createEmptyMeasure());
+      rows.push({ id: createRowId(), label: i === 0 ? (label || undefined) : undefined, measures: rowMeasures });
     }
-
-    // Append to existing lead sheet or create new
     const existing = song.leadSheet ?? createEmptyLeadSheet();
-    // If existing only has one empty row, replace it
     const isBlank = existing.rows.length === 1 && existing.rows[0].measures.every(m => m.chords.length === 0);
-    const newSheet: LeadSheet = {
-      ...existing,
-      rows: isBlank ? rows : [...existing.rows, ...rows],
-    };
-    onUpdate(newSheet);
+    onUpdate({ ...existing, rows: isBlank ? rows : [...existing.rows, ...rows] });
+    setOpen(false);
+  }
+
+  function loadAllSections(sections: SongSection[]) {
+    const measuresPerRow = song.leadSheet?.measuresPerRow ?? 4;
+    const allRows: LeadSheet["rows"] = [];
+    for (const section of sections) {
+      const lsChords: LeadSheetChord[] = section.chords.map(c => ({
+        label: c.label, chordKey: c.chordKey, suffix: c.suffix, beat: 0, voicingIndex: c.voicingIndex,
+      }));
+      const measures = lsChords.map(chord => ({ id: createMeasureId(), chords: [chord] }));
+      for (let i = 0; i < measures.length; i += measuresPerRow) {
+        const rowMeasures = measures.slice(i, i + measuresPerRow);
+        while (rowMeasures.length < measuresPerRow) rowMeasures.push(createEmptyMeasure());
+        allRows.push({ id: createRowId(), label: i === 0 ? section.label : undefined, measures: rowMeasures });
+      }
+    }
+    const existing = song.leadSheet ?? createEmptyLeadSheet();
+    const isBlank = existing.rows.length === 1 && existing.rows[0].measures.every(m => m.chords.length === 0);
+    onUpdate({ ...existing, rows: isBlank ? allRows : [...existing.rows, ...allRows] });
     setOpen(false);
   }
 
