@@ -139,6 +139,18 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
               <h1 className="text-lg font-bold text-foreground truncate">{song.title || "Untitled"}</h1>
               {song.artist && <p className="text-xs text-muted-foreground">{song.artist}</p>}
             </div>
+            <select
+              value={countInBars}
+              onChange={(e) => setCountInBars(Number(e.target.value))}
+              disabled={playing}
+              className="px-2 py-1 rounded-lg bg-secondary text-foreground text-xs font-semibold border border-border/50 outline-none disabled:opacity-50"
+            >
+              <option value={0}>No count-in</option>
+              <option value={1}>1 bar</option>
+              <option value={2}>2 bars</option>
+              <option value={4}>4 bars</option>
+              <option value={8}>8 bars</option>
+            </select>
             <button
               onClick={playing ? stopPlayback : startPlayback}
               className={`p-2 rounded-xl transition-colors ${
@@ -150,6 +162,7 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
           </div>
           {playing && (
             <div className="mt-2 flex items-center gap-3">
+              {countingIn && <span className="text-xs font-bold text-primary animate-pulse">Count-in…</span>}
               <span className="text-xs font-semibold text-muted-foreground">{bpm} BPM</span>
               <span className="text-xs text-muted-foreground">|</span>
               <span className="text-xs font-semibold text-muted-foreground">{beatsPerMeasure}/{songMeter.beatUnit}</span>
