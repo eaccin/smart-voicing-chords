@@ -652,6 +652,22 @@ function LoadSectionsToLeadSheetButton({
           Load into Lead Sheet
         </p>
 
+        {/* Load ALL sections at once */}
+        {song.sections.filter(s => s.chords.length > 0).length > 1 && (
+          <button
+            onClick={() => {
+              const sectionsWithChords = song.sections.filter(s => s.chords.length > 0);
+              loadAllSections(sectionsWithChords);
+            }}
+            className="w-full text-left px-3 py-2 mb-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 transition-colors"
+          >
+            <p className="text-xs font-bold text-primary">⬇ Load All Sections</p>
+            <p className="text-[10px] text-muted-foreground">
+              {song.sections.filter(s => s.chords.length > 0).length} sections · {song.sections.filter(s => s.chords.length > 0).reduce((n, s) => n + s.chords.length, 0)} chords
+            </p>
+          </button>
+        )}
+
         {/* Current song sections */}
         {hasCurrentSections && (
           <div className="mb-2">
