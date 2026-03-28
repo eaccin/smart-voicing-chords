@@ -597,45 +597,39 @@ function LoadSectionsToLeadSheetButton({
 
   function loadChords(chords: SongChord[], label?: string) {
     const measuresPerRow = song.leadSheet?.measuresPerRow ?? 4;
-    // Convert chords to lead sheet: 1 chord per measure, beat 0
     const lsChords: LeadSheetChord[] = chords.map(c => ({
-      label: c.label,
-      chordKey: c.chordKey,
-      suffix: c.suffix,
-      beat: 0,
-      voicingIndex: c.voicingIndex,
+      label: c.label, chordKey: c.chordKey, suffix: c.suffix, beat: 0, voicingIndex: c.voicingIndex,
     }));
-
-    // Create measures, one per chord
-    const measures = lsChords.map(chord => ({
-      id: createMeasureId(),
-      chords: [chord],
-    }));
-
-    // Group into rows
+    const measures = lsChords.map(chord => ({ id: createMeasureId(), chords: [chord] }));
     const rows: LeadSheet["rows"] = [];
     for (let i = 0; i < measures.length; i += measuresPerRow) {
       const rowMeasures = measures.slice(i, i + measuresPerRow);
-      // Pad to measuresPerRow
-      while (rowMeasures.length < measuresPerRow) {
-        rowMeasures.push(createEmptyMeasure());
-      }
-      rows.push({
-        id: createRowId(),
-        label: i === 0 ? (label || undefined) : undefined,
-        measures: rowMeasures,
-      });
+      while (rowMeasures.length < measuresPerRow) rowMeasures.push(createEmptyMeasure());
+      rows.push({ id: createRowId(), label: i === 0 ? (label || undefined) : undefined, measures: rowMeasures });
     }
-
-    // Append to existing lead sheet or create new
     const existing = song.leadSheet ?? createEmptyLeadSheet();
-    // If existing only has one empty row, replace it
     const isBlank = existing.rows.length === 1 && existing.rows[0].measures.every(m => m.chords.length === 0);
-    const newSheet: LeadSheet = {
-      ...existing,
-      rows: isBlank ? rows : [...existing.rows, ...rows],
-    };
-    onUpdate(newSheet);
+    onUpdate({ ...existing, rows: isBlank ? rows : [...existing.rows, ...rows] });
+    setOpen(false);
+  }
+
+  function loadAllSections(sections: SongSection[]) {
+    const measuresPerRow = song.leadSheet?.measuresPerRow ?? 4;
+    const allRows: LeadSheet["rows"] = [];
+    for (const section of sections) {
+      const lsChords: LeadSheetChord[] = section.chords.map(c => ({
+        label: c.label, chordKey: c.chordKey, suffix: c.suffix, beat: 0, voicingIndex: c.voicingIndex,
+      }));
+      const measures = lsChords.map(chord => ({ id: createMeasureId(), chords: [chord] }));
+      for (let i = 0; i < measures.length; i += measuresPerRow) {
+        const rowMeasures = measures.slice(i, i + measuresPerRow);
+        while (rowMeasures.length < measuresPerRow) rowMeasures.push(createEmptyMeasure());
+        allRows.push({ id: createRowId(), label: i === 0 ? section.label : undefined, measures: rowMeasures });
+      }
+    }
+    const existing = song.leadSheet ?? createEmptyLeadSheet();
+    const isBlank = existing.rows.length === 1 && existing.rows[0].measures.every(m => m.chords.length === 0);
+    onUpdate({ ...existing, rows: isBlank ? allRows : [...existing.rows, ...allRows] });
     setOpen(false);
   }
 
@@ -651,6 +645,22 @@ function LoadSectionsToLeadSheetButton({
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 mb-2">
           Load into Lead Sheet
         </p>
+
+        {/* Load ALL sections at once */}
+        {song.sections.filter(s => s.chords.length > 0).length > 1 && (
+          <button
+            onClick={() => {
+              const sectionsWithChords = song.sections.filter(s => s.chords.length > 0);
+              loadAllSections(sectionsWithChords);
+            }}
+            className="w-full text-left px-3 py-2 mb-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 transition-colors"
+          >
+            <p className="text-xs font-bold text-primary">⬇ Load All Sections</p>
+            <p className="text-[10px] text-muted-foreground">
+              {song.sections.filter(s => s.chords.length > 0).length} sections · {song.sections.filter(s => s.chords.length > 0).reduce((n, s) => n + s.chords.length, 0)} chords
+            </p>
+          </button>
+        )}
 
         {/* Current song sections */}
         {hasCurrentSections && (
@@ -701,14 +711,16 @@ function LoadSectionsToLeadSheetButton({
 function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter; onBack: () => void }) {
   const [clef, setClef] = useState<"treble" | "bass">("treble");
   const [songKey, setSongKey] = useState(song.songKey ?? "");
+  const [countInBars, setCountInBars] = useState(0);
   const allChords = getAllChordsWithCustom();
   const metronome = useMetronome();
   const { playChord } = useChordPlayer();
   const [playing, setPlaying] = useState(false);
+  const [countingIn, setCountingIn] = useState(false);
   const [activeMeasure, setActiveMeasure] = useState(-1);
   const [activeBeat, setActiveBeat] = useState(-1);
   const timerRef = useRef<number | null>(null);
-  const stateRef = useRef({ measureIdx: 0, beat: 0 });
+  const stateRef = useRef({ measureIdx: 0, beat: 0, countInBeatsLeft: 0 });
 
   const sheet = song.leadSheet!;
   const bpm = song.bpm ?? 120;
@@ -727,9 +739,10 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     metronome.stop();
     setPlaying(false);
+    setCountingIn(false);
     setActiveMeasure(-1);
     setActiveBeat(-1);
-    stateRef.current = { measureIdx: 0, beat: 0 };
+    stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: 0 };
   }, [metronome]);
 
   const startPlayback = useCallback(() => {
@@ -737,24 +750,51 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
     stopPlayback();
     setPlaying(true);
     metronome.start(bpm, beatsPerMeasure);
-    stateRef.current = { measureIdx: 0, beat: 0 };
-    setActiveMeasure(0);
-    setActiveBeat(0);
 
-    const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
-    const onBeat0 = firstChords.find(c => c.beat === 0);
-    if (onBeat0) { const v = getVoicing(onBeat0); if (v) playChord(v); }
+    const totalCountInBeats = countInBars * beatsPerMeasure;
+
+    if (totalCountInBeats > 0) {
+      setCountingIn(true);
+      stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: totalCountInBeats };
+      setActiveMeasure(-1);
+      setActiveBeat(-1);
+    } else {
+      stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: 0 };
+      setActiveMeasure(0);
+      setActiveBeat(0);
+      const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
+      const onBeat0 = firstChords.find(c => c.beat === 0);
+      if (onBeat0) { const v = getVoicing(onBeat0); if (v) playChord(v); }
+    }
 
     const interval = (60 / bpm) * 1000;
     timerRef.current = window.setInterval(() => {
-      let { measureIdx, beat } = stateRef.current;
+      let { measureIdx, beat, countInBeatsLeft } = stateRef.current;
+
+      // Still in count-in phase
+      if (countInBeatsLeft > 1) {
+        stateRef.current = { measureIdx, beat, countInBeatsLeft: countInBeatsLeft - 1 };
+        return;
+      }
+      // Transition from count-in to song
+      if (countInBeatsLeft === 1) {
+        stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: 0 };
+        setCountingIn(false);
+        setActiveMeasure(0);
+        setActiveBeat(0);
+        const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
+        const onBeat0 = firstChords.find(c => c.beat === 0);
+        if (onBeat0) { const v = getVoicing(onBeat0); if (v) playChord(v); }
+        return;
+      }
+
       beat++;
       if (beat >= beatsPerMeasure) {
         beat = 0;
         measureIdx++;
         if (measureIdx >= flat.length) { stopPlayback(); return; }
       }
-      stateRef.current = { measureIdx, beat };
+      stateRef.current = { measureIdx, beat, countInBeatsLeft: 0 };
       setActiveMeasure(measureIdx);
       setActiveBeat(beat);
 
@@ -762,7 +802,7 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
       const onBeat = chords.find(c => c.beat === beat);
       if (onBeat) { const v = getVoicing(onBeat); if (v) playChord(v); }
     }, interval);
-  }, [flat, bpm, beatsPerMeasure, metronome, playChord, stopPlayback, allMeasuresList]);
+  }, [flat, bpm, beatsPerMeasure, countInBars, metronome, playChord, stopPlayback, allMeasuresList]);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -793,6 +833,20 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
             ))}
           </select>
 
+          {/* Count-in selector */}
+          <select
+            value={countInBars}
+            onChange={(e) => setCountInBars(Number(e.target.value))}
+            disabled={playing}
+            className="px-2 py-1 rounded-lg bg-secondary text-foreground text-xs font-semibold border border-border/50 outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50"
+          >
+            <option value={0}>No count-in</option>
+            <option value={1}>1 bar count-in</option>
+            <option value={2}>2 bars count-in</option>
+            <option value={4}>4 bars count-in</option>
+            <option value={8}>8 bars count-in</option>
+          </select>
+
           {/* Play/Stop */}
           <button
             onClick={playing ? stopPlayback : startPlayback}
@@ -806,6 +860,7 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
 
           {playing && (
             <div className="flex items-center gap-2">
+              {countingIn && <span className="text-xs font-bold text-primary animate-pulse">Count-in…</span>}
               <span className="text-xs font-semibold text-muted-foreground">{bpm} BPM</span>
               <div className="flex gap-1">
                 {Array.from({ length: beatsPerMeasure }).map((_, i) => (

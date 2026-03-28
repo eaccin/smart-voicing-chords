@@ -20,10 +20,12 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
   const metronome = useMetronome();
   const { playChord } = useChordPlayer();
   const [playing, setPlaying] = useState(false);
+  const [countingIn, setCountingIn] = useState(false);
+  const [countInBars, setCountInBars] = useState(0);
   const [activeMeasure, setActiveMeasure] = useState(-1);
   const [activeBeat, setActiveBeat] = useState(-1);
   const timerRef = useRef<number | null>(null);
-  const stateRef = useRef({ measureIdx: 0, beat: 0 });
+  const stateRef = useRef({ measureIdx: 0, beat: 0, countInBeatsLeft: 0 });
 
   const sheet = song.leadSheet;
   if (!sheet) return null;
@@ -55,9 +57,10 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     metronome.stop();
     setPlaying(false);
+    setCountingIn(false);
     setActiveMeasure(-1);
     setActiveBeat(-1);
-    stateRef.current = { measureIdx: 0, beat: 0 };
+    stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: 0 };
   }, [metronome]);
 
   const startPlayback = useCallback(() => {
@@ -65,43 +68,57 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
     stopPlayback();
     setPlaying(true);
     metronome.start(bpm, beatsPerMeasure);
-    stateRef.current = { measureIdx: 0, beat: 0 };
-    setActiveMeasure(0);
-    setActiveBeat(0);
 
-    // Play chord on beat 0 of first measure
-    const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
-    const onBeat0 = firstChords.find(c => c.beat === 0);
-    if (onBeat0) {
-      const v = getVoicing(onBeat0);
-      if (v) playChord(v);
+    const totalCountInBeats = countInBars * beatsPerMeasure;
+
+    if (totalCountInBeats > 0) {
+      setCountingIn(true);
+      stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: totalCountInBeats };
+      setActiveMeasure(-1);
+      setActiveBeat(-1);
+    } else {
+      stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: 0 };
+      setActiveMeasure(0);
+      setActiveBeat(0);
+      const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
+      const onBeat0 = firstChords.find(c => c.beat === 0);
+      if (onBeat0) { const v = getVoicing(onBeat0); if (v) playChord(v); }
     }
 
     const interval = (60 / bpm) * 1000;
     timerRef.current = window.setInterval(() => {
-      let { measureIdx, beat } = stateRef.current;
+      let { measureIdx, beat, countInBeatsLeft } = stateRef.current;
+
+      if (countInBeatsLeft > 1) {
+        stateRef.current = { measureIdx, beat, countInBeatsLeft: countInBeatsLeft - 1 };
+        return;
+      }
+      if (countInBeatsLeft === 1) {
+        stateRef.current = { measureIdx: 0, beat: 0, countInBeatsLeft: 0 };
+        setCountingIn(false);
+        setActiveMeasure(0);
+        setActiveBeat(0);
+        const firstChords = getEffectiveChords(allMeasuresList[0], allMeasuresList, 0);
+        const onBeat0 = firstChords.find(c => c.beat === 0);
+        if (onBeat0) { const v = getVoicing(onBeat0); if (v) playChord(v); }
+        return;
+      }
+
       beat++;
       if (beat >= beatsPerMeasure) {
         beat = 0;
         measureIdx++;
-        if (measureIdx >= flat.length) {
-          stopPlayback();
-          return;
-        }
+        if (measureIdx >= flat.length) { stopPlayback(); return; }
       }
-      stateRef.current = { measureIdx, beat };
+      stateRef.current = { measureIdx, beat, countInBeatsLeft: 0 };
       setActiveMeasure(measureIdx);
       setActiveBeat(beat);
 
-      // Play chord if one starts on this beat
       const chords = getEffectiveChords(allMeasuresList[measureIdx], allMeasuresList, measureIdx);
       const onBeat = chords.find(c => c.beat === beat);
-      if (onBeat) {
-        const v = getVoicing(onBeat);
-        if (v) playChord(v);
-      }
+      if (onBeat) { const v = getVoicing(onBeat); if (v) playChord(v); }
     }, interval);
-  }, [flat, bpm, beatsPerMeasure, metronome, playChord, stopPlayback, allMeasuresList]);
+  }, [flat, bpm, beatsPerMeasure, countInBars, metronome, playChord, stopPlayback, allMeasuresList]);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -122,6 +139,18 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
               <h1 className="text-lg font-bold text-foreground truncate">{song.title || "Untitled"}</h1>
               {song.artist && <p className="text-xs text-muted-foreground">{song.artist}</p>}
             </div>
+            <select
+              value={countInBars}
+              onChange={(e) => setCountInBars(Number(e.target.value))}
+              disabled={playing}
+              className="px-2 py-1 rounded-lg bg-secondary text-foreground text-xs font-semibold border border-border/50 outline-none disabled:opacity-50"
+            >
+              <option value={0}>No count-in</option>
+              <option value={1}>1 bar</option>
+              <option value={2}>2 bars</option>
+              <option value={4}>4 bars</option>
+              <option value={8}>8 bars</option>
+            </select>
             <button
               onClick={playing ? stopPlayback : startPlayback}
               className={`p-2 rounded-xl transition-colors ${
@@ -133,6 +162,7 @@ export default function LeadSheetPlayer({ song, onBack }: LeadSheetPlayerProps) 
           </div>
           {playing && (
             <div className="mt-2 flex items-center gap-3">
+              {countingIn && <span className="text-xs font-bold text-primary animate-pulse">Count-in…</span>}
               <span className="text-xs font-semibold text-muted-foreground">{bpm} BPM</span>
               <span className="text-xs text-muted-foreground">|</span>
               <span className="text-xs font-semibold text-muted-foreground">{beatsPerMeasure}/{songMeter.beatUnit}</span>
