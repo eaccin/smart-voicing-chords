@@ -1,26 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Volume2 } from "lucide-react";
 import {
-  armAudioUnlockOnNextGesture,
   isAudioUnlocked,
   shouldShowAudioUnlockOverlay,
-  unlockAudio,
+  unlockAndPlay,
 } from "@/hooks/useAudioContext";
 
 export default function AudioUnlockOverlay() {
   const [visible, setVisible] = useState(shouldShowAudioUnlockOverlay());
 
-  useEffect(() => {
-    if (visible || isAudioUnlocked()) return;
-    return armAudioUnlockOnNextGesture();
-  }, [visible]);
-
   if (!visible) return null;
 
   async function handleTap() {
     try {
-      await unlockAudio("overlay-button");
-      setVisible(false);
+      await unlockAndPlay("overlay-button");
+      setVisible(!isAudioUnlocked());
     } catch {
       setVisible(true);
     }
@@ -36,14 +30,14 @@ export default function AudioUnlockOverlay() {
         </div>
         <h2 className="text-xl font-bold text-foreground">Tap to Enable Audio</h2>
         <p className="text-sm text-muted-foreground text-center max-w-xs">
-          Audio playback requires a user interaction to start on mobile devices.
+          Audio playback on iPhone and iPad must be unlocked from a direct tap.
         </p>
         <button
           type="button"
           onClick={handleTap}
           className="mt-2 px-8 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
         >
-          Enable Audio
+          Enable Audio (iPhone/iPad)
         </button>
       </div>
     </div>
