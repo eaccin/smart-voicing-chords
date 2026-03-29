@@ -8,12 +8,13 @@ interface Props {
   beatsPerMeasure: number;
   subdivision: Subdivision;
   onCellChange: (measureIdx: number, stringIdx: number, colIdx: number, value: number | null) => void;
+  activeCol?: number;
 }
 
 const CELL_W = 28;
 const CELL_H = 28;
 
-export default function TabMeasureGrid({ measure, measureIndex, cols, beatsPerMeasure, subdivision, onCellChange }: Props) {
+export default function TabMeasureGrid({ measure, measureIndex, cols, beatsPerMeasure, subdivision, onCellChange, activeCol = -1 }: Props) {
   const [editing, setEditing] = useState<{ s: number; c: number } | null>(null);
   const [inputVal, setInputVal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +81,14 @@ export default function TabMeasureGrid({ measure, measureIndex, cols, beatsPerMe
           />
         );
       })}
+
+      {/* Active column highlight */}
+      {activeCol >= 0 && activeCol < cols && (
+        <div
+          className="absolute top-0 bg-primary/15 pointer-events-none"
+          style={{ left: activeCol * CELL_W + 1, width: CELL_W, height: 6 * CELL_H }}
+        />
+      )}
 
       {/* Grid rows */}
       {measure.grid.map((row, s) => (
