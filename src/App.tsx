@@ -10,6 +10,7 @@ import Index from "./pages/Index.tsx";
 import Songs from "./pages/Songs.tsx";
 import VoicingEngine from "./pages/VoicingEngine.tsx";
 import PianoChords from "./pages/PianoChords.tsx";
+import TabEditor from "./pages/TabEditor.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/engine" element={<VoicingEngine />} />
           <Route path="/songs" element={<Songs />} />
           <Route path="/piano" element={<PianoChords />} />
+          <Route path="/tab" element={<TabEditor />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
