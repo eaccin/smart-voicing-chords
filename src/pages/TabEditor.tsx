@@ -215,7 +215,7 @@ export default function TabEditor() {
           </div>
         </div>
 
-        {/* Controls row 2: BPM, Count-in, Play */}
+        {/* Controls row 2: BPM, Tap Tempo, Count-in, Play, Export */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground font-medium">BPM</span>
@@ -229,6 +229,8 @@ export default function TabEditor() {
               className="w-14 px-1.5 py-1 rounded-md text-xs font-semibold bg-secondary text-foreground border border-border/50 outline-none text-center disabled:opacity-50"
             />
           </div>
+
+          <TapTempo onBpmDetected={setBpm} currentBpm={bpm} beatsPerMeasure={beatsPerMeasure} />
 
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground font-medium">Count-in</span>
@@ -271,6 +273,15 @@ export default function TabEditor() {
               className="gap-1 text-xs"
             >
               {playing ? <><Square className="w-3 h-3" /> Stop</> : <><Play className="w-3 h-3" /> Play</>}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => exportTabPdf({ measures, meter, subdivision, bpm, beatsPerMeasure, title: "Guitar Tab" })}
+              disabled={playing}
+              className="gap-1 text-xs"
+            >
+              <FileDown className="w-3 h-3" /> PDF
             </Button>
           </div>
         </div>
