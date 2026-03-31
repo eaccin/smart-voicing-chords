@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Trash2, Play, Square } from "lucide-react";
+import { Plus, Minus, Trash2, Play, Square, FileDown } from "lucide-react";
 import type { Subdivision, TabMeasure } from "@/data/tab";
 import { STRING_LABELS, columnsForSubdivision, createEmptyTabMeasure, resizeMeasureGrid } from "@/data/tab";
 import TabMeasureGrid from "@/components/tab/TabMeasureGrid";
 import { useMetronome } from "@/hooks/useMetronome";
 import { useTabPlayer } from "@/hooks/useTabPlayer";
+import TapTempo from "@/components/TapTempo";
+import { exportTabPdf } from "@/utils/tabPdfExport";
 
 type MeterType = "4/4" | "3/4" | "6/8" | "2/4";
 const METERS: { label: MeterType; beats: number }[] = [
