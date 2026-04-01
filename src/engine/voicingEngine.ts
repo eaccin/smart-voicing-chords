@@ -179,14 +179,120 @@ export function generateVoicingPaths(progression: ProgressionChord[]): VoicingPa
 
 // ── Chord search/autocomplete helpers ──
 
-export function getAvailableChordLabels(): { key: string; suffix: string; label: string }[] {
+const ROOTS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
+
+const ALL_SUFFIXES: { suffix: string; label: string }[] = [
+  { suffix: "major", label: "" },
+  { suffix: "minor", label: "m" },
+  { suffix: "7", label: "7" },
+  { suffix: "m7", label: "m7" },
+  { suffix: "maj7", label: "maj7" },
+  { suffix: "dim", label: "dim" },
+  { suffix: "dim7", label: "dim7" },
+  { suffix: "aug", label: "aug" },
+  { suffix: "sus4", label: "sus4" },
+  { suffix: "sus2", label: "sus2" },
+  { suffix: "6", label: "6" },
+  { suffix: "m6", label: "m6" },
+  { suffix: "9", label: "9" },
+  { suffix: "m9", label: "m9" },
+  { suffix: "maj9", label: "maj9" },
+  { suffix: "add9", label: "add9" },
+  { suffix: "11", label: "11" },
+  { suffix: "m11", label: "m11" },
+  { suffix: "13", label: "13" },
+  { suffix: "m13", label: "m13" },
+  { suffix: "7sus4", label: "7sus4" },
+  { suffix: "7sus2", label: "7sus2" },
+  { suffix: "m7b5", label: "m7b5" },
+  { suffix: "minmaj7", label: "m(maj7)" },
+  { suffix: "7b9", label: "7b9" },
+  { suffix: "7#9", label: "7#9" },
+  { suffix: "7b5", label: "7b5" },
+  { suffix: "7#5", label: "7#5" },
+  { suffix: "7#11", label: "7#11" },
+  { suffix: "7alt", label: "7alt" },
+  { suffix: "add11", label: "add11" },
+  { suffix: "m(add9)", label: "m(add9)" },
+  { suffix: "maj13", label: "maj13" },
+  { suffix: "69", label: "69" },
+];
+
+const BASS_NOTES = ["C", "C#", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"];
+
+/** Build searchable chord list including slash chords */
+function buildSearchableChords(): { key: string; suffix: string; label: string }[] {
+  const results: { key: string; suffix: string; label: string }[] = [];
+  
+  // Existing chords from database
   const allChords = getAllChordsWithCustom();
-  return allChords.map(c => ({ key: c.key, suffix: c.suffix, label: c.label }));
+  for (const c of allChords) {
+    results.push({ key: c.key, suffix: c.suffix, label: c.label });
+  }
+  const existingLabels = new Set(results.map(r => r.label));
+
+  // Generate all root+suffix combos not already in DB
+  for (const root of ROOTS) {
+    for (const { suffix, label: suffLabel } of ALL_SUFFIXES) {
+      const label = `${root}${suffLabel}`;
+      if (!existingLabels.has(label)) {
+        results.push({ key: root, suffix, label });
+        existingLabels.add(label);
+      }
+    }
+  }
+  
+  // Slash chords: only generate when searched (too many otherwise)
+  return results;
+}
+
+let _cachedSearchable: { key: string; suffix: string; label: string }[] | null = null;
+
+function getSearchableChords() {
+  if (!_cachedSearchable) _cachedSearchable = buildSearchableChords();
+  return _cachedSearchable;
+}
+
+export function getAvailableChordLabels(): { key: string; suffix: string; label: string }[] {
+  return getSearchableChords();
 }
 
 export function searchChords(query: string): { key: string; suffix: string; label: string }[] {
-  const all = getAvailableChordLabels();
-  if (!query.trim()) return all.slice(0, 20);
-  const q = query.toLowerCase();
-  return all.filter(c => c.label.toLowerCase().includes(q)).slice(0, 20);
+  const all = getSearchableChords();
+  if (!query.trim()) return all.slice(0, 24);
+  const q = query.toLowerCase().trim();
+  
+  // Check if query contains a slash (searching for slash chords)
+  const slashMatch = q.match(/^([a-g][#b]?\w*)\s*\/\s*([a-g]?[#b]?)$/i);
+  if (slashMatch) {
+    const chordPart = slashMatch[1].toLowerCase();
+    const bassPart = slashMatch[2].toLowerCase();
+    
+    // Find matching base chords
+    const baseMatches = all.filter(c => c.label.toLowerCase().startsWith(chordPart) || c.label.toLowerCase() === chordPart);
+    const slashResults: { key: string; suffix: string; label: string }[] = [];
+    
+    for (const base of baseMatches.slice(0, 6)) {
+      for (const bass of BASS_NOTES) {
+        if (bassPart && !bass.toLowerCase().startsWith(bassPart)) continue;
+        const label = `${base.label}/${bass}`;
+        slashResults.push({ key: base.key, suffix: `${base.suffix}/${bass}`, label });
+      }
+    }
+    return slashResults.slice(0, 24);
+  }
+  
+  // Regular search with smart sorting
+  const exact: typeof all = [];
+  const startsWith: typeof all = [];
+  const includes: typeof all = [];
+  
+  for (const c of all) {
+    const lbl = c.label.toLowerCase();
+    if (lbl === q) exact.push(c);
+    else if (lbl.startsWith(q)) startsWith.push(c);
+    else if (lbl.includes(q)) includes.push(c);
+  }
+  
+  return [...exact, ...startsWith, ...includes].slice(0, 24);
 }
