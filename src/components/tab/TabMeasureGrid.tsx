@@ -18,6 +18,7 @@ function getCellWidth(subdivision: Subdivision): number {
 }
 
 export default function TabMeasureGrid({ measure, measureIndex, cols, beatsPerMeasure, subdivision, onCellChange, activeCol = -1 }: Props) {
+  const CELL_W = getCellWidth(subdivision);
   const [editing, setEditing] = useState<{ s: number; c: number } | null>(null);
   const [inputVal, setInputVal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
