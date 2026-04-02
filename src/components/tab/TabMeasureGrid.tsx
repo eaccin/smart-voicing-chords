@@ -11,10 +11,14 @@ interface Props {
   activeCol?: number;
 }
 
-const CELL_W = 28;
 const CELL_H = 28;
 
+function getCellWidth(subdivision: Subdivision): number {
+  return subdivision === "quarter" ? 56 : subdivision === "eighth" ? 28 : 22;
+}
+
 export default function TabMeasureGrid({ measure, measureIndex, cols, beatsPerMeasure, subdivision, onCellChange, activeCol = -1 }: Props) {
+  const CELL_W = getCellWidth(subdivision);
   const [editing, setEditing] = useState<{ s: number; c: number } | null>(null);
   const [inputVal, setInputVal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
