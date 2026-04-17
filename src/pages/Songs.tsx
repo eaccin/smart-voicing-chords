@@ -1,13 +1,15 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Music2, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Music2, Trash2, ChevronRight, Download, Upload } from "lucide-react";
 import type { Song } from "@/data/songs";
-import { getSongs, deleteSong, createId } from "@/data/songs";
+import { getSongs, deleteSong, createId, saveSong, exportAllSongsAsJSON, parseSongsFromJSON } from "@/data/songs";
 import SongEditor from "@/components/SongEditor";
 
 export default function Songs() {
   const [songs, setSongs] = useState<Song[]>(() => getSongs());
   const [editingSong, setEditingSong] = useState<Song | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(() => setSongs(getSongs()), []);
 
@@ -28,6 +30,25 @@ export default function Songs() {
     refresh();
   }
 
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = parseSongsFromJSON(ev.target?.result as string);
+        imported.forEach(s => saveSong(s));
+        refresh();
+        setImportError(null);
+      } catch (err) {
+        setImportError(err instanceof Error ? err.message : "Invalid file");
+      } finally {
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  }
+
   if (editingSong) {
     return (
       <SongEditor
@@ -42,20 +63,50 @@ export default function Songs() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
         <div className="max-w-lg mx-auto px-4 py-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Music2 className="w-6 h-6 text-primary" />
             <h1 className="text-lg font-semibold tracking-tighter text-foreground">My Songs</h1>
-            <button
-              onClick={handleNew}
-              className="ml-auto p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+            <div className="ml-auto flex items-center gap-1">
+              {songs.length > 0 && (
+                <button
+                  onClick={exportAllSongsAsJSON}
+                  className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  title="Export all songs as JSON"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              )}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                title="Import songs from JSON"
+              >
+                <Upload className="w-5 h-5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={handleImport}
+              />
+              <button
+                onClick={handleNew}
+                className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4 pb-24">
+        {importError && (
+          <div className="mb-3 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+            Import failed: {importError}
+          </div>
+        )}
         {songs.length > 0 ? (
           <div className="space-y-2">
             {songs.map(song => (

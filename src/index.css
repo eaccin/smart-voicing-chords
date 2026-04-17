@@ -54,6 +54,113 @@
   }
 }
 
+/* ── Mid-dark mode ───────────────────────────────────────────────────────── */
+[data-mode="mid"] {
+  --background:          222 30% 20%;
+  --foreground:          210 40% 94%;
+
+  --card:                222 30% 26%;
+  --card-foreground:     210 40% 94%;
+
+  --popover:             222 30% 26%;
+  --popover-foreground:  210 40% 94%;
+
+  --secondary:           217 22% 34%;
+  --secondary-foreground:210 40% 94%;
+
+  --muted:               217 22% 34%;
+  --muted-foreground:    215 20% 62%;
+
+  --border:              217 20% 30%;
+  --input:               217 20% 30%;
+
+  --surface:             222 30% 26%;
+  --surface-elevated:    222 30% 30%;
+
+  --string-color:        217 19% 44%;
+  --fret-color:          217 19% 32%;
+  --nut-color:           210 40% 80%;
+
+  --sidebar-background:  222 30% 20%;
+  --sidebar-foreground:  210 40% 94%;
+  --sidebar-border:      217 20% 30%;
+  --sidebar-accent:      217 22% 34%;
+  --sidebar-accent-foreground: 210 40% 94%;
+}
+
+/* ── Light mode ──────────────────────────────────────────────────────────── */
+[data-mode="light"] {
+  --background:          216 18% 88%;
+  --foreground:          222 47% 12%;
+
+  --card:                216 18% 93%;
+  --card-foreground:     222 47% 12%;
+
+  --popover:             216 18% 93%;
+  --popover-foreground:  222 47% 12%;
+
+  --secondary:           216 16% 82%;
+  --secondary-foreground:222 47% 20%;
+
+  --muted:               216 16% 82%;
+  --muted-foreground:    215 16% 40%;
+
+  --destructive:         0 84% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border:              217 15% 76%;
+  --input:               217 15% 76%;
+
+  --surface:             216 18% 93%;
+  --surface-elevated:    216 18% 96%;
+
+  --string-color:        217 15% 58%;
+  --fret-color:          217 15% 72%;
+  --nut-color:           222 47% 18%;
+
+  --sidebar-background:  210 20% 94%;
+  --sidebar-foreground:  222 47% 12%;
+  --sidebar-border:      217 19% 85%;
+  --sidebar-accent:      210 20% 91%;
+  --sidebar-accent-foreground: 222 47% 12%;
+}
+
+/* ── Accent: Purple ──────────────────────────────────────────────────────── */
+[data-accent="purple"] {
+  --primary:             267 83% 65%;
+  --primary-foreground:  0 0% 100%;
+  --accent:              285 75% 60%;
+  --accent-foreground:   0 0% 100%;
+  --ring:                267 83% 65%;
+  --finger-glow:         267 83% 65%;
+  --sidebar-primary:     267 83% 65%;
+  --sidebar-ring:        267 83% 65%;
+}
+
+/* ── Accent: Green ───────────────────────────────────────────────────────── */
+[data-accent="green"] {
+  --primary:             142 68% 42%;
+  --primary-foreground:  0 0% 100%;
+  --accent:              158 60% 40%;
+  --accent-foreground:   0 0% 100%;
+  --ring:                142 68% 42%;
+  --finger-glow:         142 68% 42%;
+  --sidebar-primary:     142 68% 42%;
+  --sidebar-ring:        142 68% 42%;
+}
+
+/* ── Accent: Amber ───────────────────────────────────────────────────────── */
+[data-accent="amber"] {
+  --primary:             38 92% 50%;
+  --primary-foreground:  222 47% 10%;
+  --accent:              25 95% 53%;
+  --accent-foreground:   222 47% 10%;
+  --ring:                38 92% 50%;
+  --finger-glow:         38 92% 50%;
+  --sidebar-primary:     38 92% 50%;
+  --sidebar-ring:        38 92% 50%;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -82,5 +189,47 @@
   @page {
     margin: 1.5cm;
     size: A4;
+  }
+
+  /* Piano sheet print styles */
+  /* Hide everything except the sheet overlay */
+  body > *:not(.piano-sheet-overlay) {
+    display: none !important;
+  }
+
+  .piano-sheet-overlay {
+    position: static !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .piano-sheet-no-print {
+    display: none !important;
+  }
+
+  .piano-sheet-print-title {
+    display: block !important;
+  }
+
+  .piano-sheet-content {
+    overflow: visible !important;
+  }
+
+  .piano-sheet-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .piano-sheet-card {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+  }
+
+  .piano-sheet-label {
+    color: black !important;
+  }
+
+  .piano-sheet-sublabel {
+    color: #555 !important;
   }
 }

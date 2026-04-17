@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search, X, PenTool } from "lucide-react";
-import { getAllChordsWithCustom, rootNotes, suffixes, suffixLabels } from "@/data/chords";
+import { getAllChordsWithCustom, rootNotes, suffixes, suffixLabels, suffixDescriptions } from "@/data/chords";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SongChord } from "@/data/songs";
 import ChordDiagram from "./ChordDiagram";
 import SongCustomChord from "./SongCustomChord";
@@ -49,6 +50,19 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
     });
     setSelectedChordId(null);
     setSelectedVoicing(0);
+  }
+
+  function handleDoubleClickVoicing(i: number) {
+    if (!selectedChord) return;
+    onPick({
+      label: selectedChord.label,
+      chordKey: selectedChord.key,
+      suffix: selectedChord.suffix,
+      voicingIndex: i,
+    });
+    setSelectedChordId(null);
+    setSelectedVoicing(0);
+    onClose();
   }
 
   function handleQuickInsert(id: string) {
@@ -106,19 +120,29 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
               </button>
             ))}
           </div>
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {suffixes.map(s => (
-              <button
-                key={s}
-                onClick={() => setActiveSuffix(prev => prev === s ? null : s)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
-                  activeSuffix === s ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {suffixLabels[s] || s}
-              </button>
-            ))}
-          </div>
+          <TooltipProvider delayDuration={400}>
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {suffixes.map(s => (
+                <Tooltip key={s}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setActiveSuffix(prev => prev === s ? null : s)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                        activeSuffix === s ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {suffixLabels[s] || s}
+                    </button>
+                  </TooltipTrigger>
+                  {suffixDescriptions[s] && (
+                    <TooltipContent side="bottom" className="max-w-[200px] text-center text-xs">
+                      {suffixDescriptions[s]}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -144,11 +168,13 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
                   <button
                     key={i}
                     onClick={() => setSelectedVoicing(i)}
+                    onDoubleClick={() => handleDoubleClickVoicing(i)}
                     className={`p-3 rounded-xl border-2 transition-colors ${
                       i === selectedVoicing
                         ? "border-primary bg-primary/10"
                         : "border-border bg-card hover:border-muted-foreground/30"
                     }`}
+                    title="Double-click to add"
                   >
                     <p className="text-xs font-medium text-muted-foreground mb-2">{v.name}</p>
                     <ChordDiagram voicing={v} size="sm" />
@@ -162,6 +188,7 @@ export default function ChordPicker({ onPick, onClose }: ChordPickerProps) {
                 >
                   Add {selectedChord.label}
                 </button>
+                <p className="text-center text-xs text-muted-foreground mt-2">Double-tap a diagram to add instantly</p>
               </div>
             </div>
           ) : (

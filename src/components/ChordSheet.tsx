@@ -1,4 +1,4 @@
-import { ChevronLeft, Printer, Volume2, VolumeX, Play, Square } from "lucide-react";
+import { ChevronLeft, Printer, Volume2, VolumeX, Play, Square, Repeat } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Song, SongChord, Meter } from "@/data/songs";
 import { getAllChordsWithCustom } from "@/data/chords";
@@ -20,6 +20,7 @@ export default function ChordSheet({ song, onBack }: ChordSheetProps) {
   const { playChord } = useChordPlayer();
   const [metronomeOn, setMetronomeOn] = useState(false);
   const [autoPlaying, setAutoPlaying] = useState(false);
+  const [loopEnabled, setLoopEnabled] = useState(false);
   const [activeChordIndex, setActiveChordIndex] = useState(-1);
   const autoPlayTimerRef = useRef<number | null>(null);
   const autoPlayIndexRef = useRef(0);
@@ -76,8 +77,17 @@ export default function ChordSheet({ song, onBack }: ChordSheetProps) {
     setCurrentAutoMeter(songMeter);
   }, [songMeter]);
 
+  const loopEnabledRef = useRef(false);
+  loopEnabledRef.current = loopEnabled;
+
   const scheduleNext = useCallback((index: number, chords: ChordWithMeter[]) => {
     if (index >= chords.length) {
+      if (loopEnabledRef.current) {
+        // Loop back to start
+        autoPlayIndexRef.current = 0;
+        scheduleNext(0, chords);
+        return;
+      }
       stopAutoPlay();
       metronome.stop();
       setMetronomeOn(false);
@@ -145,6 +155,19 @@ export default function ChordSheet({ song, onBack }: ChordSheetProps) {
               <h1 className="text-lg font-bold text-foreground truncate">{song.title || "Untitled Song"}</h1>
               {song.artist && <p className="text-xs text-muted-foreground">{song.artist}</p>}
             </div>
+
+            {/* Loop toggle */}
+            <button
+              onClick={() => setLoopEnabled(p => !p)}
+              className={`p-2 rounded-xl transition-colors ${
+                loopEnabled
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+              title={loopEnabled ? "Loop on" : "Loop off"}
+            >
+              <Repeat className="w-4 h-4" />
+            </button>
 
             {/* Auto-play toggle */}
             <button
@@ -269,6 +292,11 @@ export default function ChordSheet({ song, onBack }: ChordSheetProps) {
                 />
               ) : (
                 <p className="text-sm text-muted-foreground/50 italic">No chords</p>
+              )}
+              {section.lyrics && (
+                <p className="mt-2 text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap font-sans print:text-xs">
+                  {section.lyrics}
+                </p>
               )}
             </div>
           );

@@ -3995,6 +3995,33 @@ export const suffixLabels: Record<string, string> = {
   "7sus4": "7sus4", "11": "11", "13": "13",
 };
 
+export const suffixDescriptions: Record<string, string> = {
+  major:   "Major — bright, happy (1 3 5)",
+  minor:   "Minor — dark, sad (1 ♭3 5)",
+  "7":     "Dominant 7th — bluesy tension (1 3 5 ♭7)",
+  m7:      "Minor 7th — smooth, jazzy (1 ♭3 5 ♭7)",
+  maj7:    "Major 7th — dreamy, sophisticated (1 3 5 7)",
+  minmaj7: "Minor-Major 7th — dark & tense (1 ♭3 5 7)",
+  sus2:    "Suspended 2nd — open, unresolved (1 2 5)",
+  sus4:    "Suspended 4th — floating tension (1 4 5)",
+  dim:     "Diminished — unstable, tense (1 ♭3 ♭5)",
+  aug:     "Augmented — mysterious (1 3 ♯5)",
+  add9:    "Add 9 — major with colour (1 3 5 9)",
+  "9":     "Dominant 9th — rich, jazzy (1 3 5 ♭7 9)",
+  dim7:    "Diminished 7th — very tense (1 ♭3 ♭5 𝄫7)",
+  "6":     "Major 6th — sweet, retro (1 3 5 6)",
+  m6:      "Minor 6th — melancholic (1 ♭3 5 6)",
+  m9:      "Minor 9th — lush, modern (1 ♭3 5 ♭7 9)",
+  "7sus4": "Dominant Sus4 — funky (1 4 5 ♭7)",
+  "11":    "Dominant 11th — open, lush (1 3 ♭7 9 11)",
+  "13":    "Dominant 13th — full jazz (1 3 ♭7 9 13)",
+  maj9:    "Major 9th — dreamy, lush (1 3 5 7 9)",
+  "7#9":   "7♯9 — Hendrix chord (1 3 ♭7 ♯9)",
+  "7b9":   "7♭9 — tense, resolving (1 3 ♭7 ♭9)",
+  "7#11":  "Lydian dominant — floating (1 3 ♭7 ♯11)",
+  "7b13":  "Altered dominant — dark (1 3 ♭7 ♭13)",
+};
+
 export function searchChords(query: string): Chord[] {
   const q = query.toLowerCase().trim();
   if (!q) return allChords;

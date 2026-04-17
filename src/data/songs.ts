@@ -29,6 +29,7 @@ export interface SongSection {
   type: "verse" | "chorus" | "bridge" | "intro" | "outro" | "pre-chorus" | "solo" | "interlude";
   label: string;       // e.g. "Verse 1", "Chorus"
   chords: SongChord[];
+  lyrics?: string;     // optional lyrics text for this section
   meterOverride?: Meter; // if different from song default
 }
 
@@ -90,4 +91,43 @@ export function deleteSong(id: string) {
 
 export function createId(): string {
   return Math.random().toString(36).slice(2, 10);
+}
+
+export function exportSongAsJSON(song: Song) {
+  const blob = new Blob([JSON.stringify(song, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(song.title || "untitled").replace(/[^a-z0-9]/gi, "_")}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function exportAllSongsAsJSON() {
+  const songs = getSongs();
+  const blob = new Blob([JSON.stringify(songs, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "songs-backup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Parse and validate imported JSON. Returns an array of Songs, throws on bad data. */
+export function parseSongsFromJSON(json: string): Song[] {
+  const data = JSON.parse(json);
+  const items: unknown[] = Array.isArray(data) ? data : [data];
+  return items.map((item, i) => {
+    if (typeof item !== "object" || item === null) throw new Error(`Item ${i} is not an object`);
+    const s = item as Record<string, unknown>;
+    if (typeof s.title !== "string") throw new Error(`Item ${i} missing title`);
+    if (!Array.isArray(s.sections)) throw new Error(`Item ${i} missing sections`);
+    return {
+      ...(s as Song),
+      id: createId(),           // fresh id to avoid collisions
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    } as Song;
+  });
 }

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, Download, Copy, Play, Square } from "lucide-react";
+import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion";
+import { Plus, Trash2, ChevronLeft, FileText, LayoutGrid, FolderOpen, BookOpen, Download, Copy, Play, Square, GripVertical } from "lucide-react";
 import type { Song, SongSection, SongChord, Meter, MeterType } from "@/data/songs";
-import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs } from "@/data/songs";
-import { getAllChordsWithCustom } from "@/data/chords";
+import { SECTION_TYPES, PRESET_METERS, createId, saveSong, getSongs, exportSongAsJSON } from "@/data/songs";
+import { getAllChordsWithCustom, rootNotes as ROOT_NOTES } from "@/data/chords";
 import { createEmptyLeadSheet, createEmptyRow, createEmptyMeasure, createRowId, createMeasureId, flattenMeasures, getEffectiveChords } from "@/data/leadsheet";
 import type { LeadSheet, LeadSheetChord } from "@/data/leadsheet";
 import { useMetronome } from "@/hooks/useMetronome";
@@ -127,6 +127,38 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
     setShowMeterOverride(null);
   }
 
+  function transposeNote(note: string, semitones: number): string {
+    const idx = ROOT_NOTES.indexOf(note);
+    if (idx === -1) return note;
+    return ROOT_NOTES[((idx + semitones) % 12 + 12) % 12];
+  }
+
+  function transposeAllChords(semitones: number) {
+    updateSong(s => ({
+      ...s,
+      songKey: s.songKey ? transposeNote(s.songKey, semitones) : s.songKey,
+      sections: s.sections.map(sec => ({
+        ...sec,
+        chords: sec.chords.map(ch => {
+          const newKey = transposeNote(ch.chordKey, semitones);
+          const displaySuffix = ch.label.slice(ch.chordKey.length);
+          return { ...ch, chordKey: newKey, label: newKey + displaySuffix, voicingIndex: 0 };
+        }),
+      })),
+    }));
+  }
+
+  function transposeToKey(targetKey: string) {
+    const currentKey = song.songKey ?? song.sections.flatMap(s => s.chords)[0]?.chordKey;
+    if (!currentKey) return;
+    const fromIdx = ROOT_NOTES.indexOf(currentKey);
+    const toIdx = ROOT_NOTES.indexOf(targetKey);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const semitones = ((toIdx - fromIdx) % 12 + 12) % 12;
+    if (semitones === 0) return;
+    transposeAllChords(semitones);
+  }
+
   if (showChordSheet) {
     saveSong(song);
     return <ChordSheet song={song} onBack={() => setShowChordSheet(false)} />;
@@ -168,6 +200,13 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
               />
             </div>
             <button
+              onClick={() => exportSongAsJSON(song)}
+              className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              title="Export song as JSON"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button
               onClick={handleSave}
               className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
             >
@@ -205,6 +244,40 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
               beatsPerMeasure={(song.meter ?? DEFAULT_METER).beatsPerMeasure}
             />
           </div>
+
+          {/* Transpose */}
+          {song.sections.some(s => s.chords.length > 0) && (
+            <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-muted-foreground">Transpose</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => transposeAllChords(-1)}
+                  className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors"
+                  title="Down one semitone"
+                >
+                  ♭ −1
+                </button>
+                <button
+                  onClick={() => transposeAllChords(1)}
+                  className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-sm font-semibold hover:bg-secondary/80 transition-colors"
+                  title="Up one semitone"
+                >
+                  ♯ +1
+                </button>
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs text-muted-foreground">to key</span>
+                <select
+                  value=""
+                  onChange={e => { if (e.target.value) transposeToKey(e.target.value); e.target.value = ""; }}
+                  className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-sm font-semibold border-none outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  <option value="">—</option>
+                  {ROOT_NOTES.map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mode toggle: Sections vs Lead Sheet */}
@@ -240,30 +313,24 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
         {editorMode === "sections" ? (
           <>
             {/* Sections */}
-            <div className="space-y-4">
+            <Reorder.Group
+              axis="y"
+              values={song.sections}
+              onReorder={sections => updateSong(s => ({ ...s, sections }))}
+              className="space-y-4 outline-none"
+            >
               {song.sections.map((section, sectionIdx) => (
-                <motion.div
-                  key={section.id}
-                  layout
-                  className="bg-card rounded-2xl overflow-hidden border border-border/50"
-                >
+                <ReorderSection key={section.id} section={section}>
+                  {(dragControls) => (
+                  <div className="bg-card rounded-2xl overflow-hidden border border-border/50">
                   {/* Section header */}
                   <div className="flex items-center gap-2 px-4 py-3 bg-surface-elevated/50">
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => moveSection(sectionIdx, sectionIdx - 1)}
-                        disabled={sectionIdx === 0}
-                        className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-opacity"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
-                      </button>
-                      <button
-                        onClick={() => moveSection(sectionIdx, sectionIdx + 1)}
-                        disabled={sectionIdx === song.sections.length - 1}
-                        className="text-muted-foreground hover:text-foreground disabled:opacity-20 transition-opacity"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
-                      </button>
+                    <div
+                      onPointerDown={e => dragControls.start(e)}
+                      className="touch-none cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Drag to reorder"
+                    >
+                      <GripVertical className="w-4 h-4" />
                     </div>
                     <input
                       type="text"
@@ -359,6 +426,25 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                       <p className="text-sm text-muted-foreground/50 italic">No chords yet</p>
                     )}
 
+                    {/* Lyrics textarea */}
+                    <textarea
+                      value={section.lyrics ?? ""}
+                      onChange={e => updateSong(s => ({
+                        ...s,
+                        sections: s.sections.map(sec =>
+                          sec.id === section.id ? { ...sec, lyrics: e.target.value } : sec
+                        ),
+                      }))}
+                      placeholder="Add lyrics…"
+                      rows={1}
+                      onInput={e => {
+                        const el = e.currentTarget;
+                        el.style.height = "auto";
+                        el.style.height = el.scrollHeight + "px";
+                      }}
+                      className="mt-3 w-full resize-none overflow-hidden bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 outline-none leading-relaxed"
+                    />
+
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => setPickerTarget(section.id)}
@@ -383,9 +469,11 @@ export default function SongEditor({ song: initialSong, onBack, onSaved }: SongE
                       />
                     </div>
                   </div>
-                </motion.div>
+                  </div>
+                  )}
+                </ReorderSection>
               ))}
-            </div>
+            </Reorder.Group>
 
             {/* Add section */}
             <div className="mt-6">
@@ -912,5 +1000,27 @@ function RealBookViewOverlay({ song, meter, onBack }: { song: Song; meter: Meter
         </div>
       </main>
     </div>
+  );
+}
+
+// ── Thin wrapper so each section item can own its useDragControls hook ──
+function ReorderSection({
+  section,
+  children,
+}: {
+  section: import("@/data/songs").SongSection;
+  children: (dragControls: ReturnType<typeof useDragControls>) => React.ReactNode;
+}) {
+  const dragControls = useDragControls();
+  return (
+    <Reorder.Item
+      value={section}
+      dragListener={false}
+      dragControls={dragControls}
+      className="list-none"
+      whileDrag={{ scale: 1.02, boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}
+    >
+      {children(dragControls)}
+    </Reorder.Item>
   );
 }

@@ -1,11 +1,25 @@
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Guitar, Plus, Volume2 } from "lucide-react";
-import { getAllChordsWithCustom, searchChords, rootNotes, suffixes, suffixLabels } from "@/data/chords";
+import { Search, Guitar, Plus, Volume2, Settings2, Star, Timer, Sun, Moon } from "lucide-react";
+import { getAllChordsWithCustom, searchChords, rootNotes, suffixes, suffixLabels, suffixDescriptions } from "@/data/chords";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Chord } from "@/data/chords";
 import ChordDiagram from "@/components/ChordDiagram";
 import VoicingCreator from "@/components/VoicingCreator";
 import { useChordPlayer } from "@/hooks/useChordPlayer";
+import { useAudioSettings } from "@/hooks/useAudioSettings";
+import type { Tone, Instrument } from "@/hooks/useAudioSettings";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useLeftHanded, setLeftHanded } from "@/hooks/useLeftHanded";
+import { useRecentChords } from "@/hooks/useRecentChords";
+import { useTheme, setTheme } from "@/hooks/useTheme";
+import type { ThemeMode, ThemeAccent } from "@/hooks/useTheme";
+import { SCALE_INTERVALS, SCALE_LABELS, chordFitsScale, getChordInScales } from "@/lib/scales";
+import { getSubstitutions } from "@/lib/substitutions";
+import FretboardMap from "@/components/FretboardMap";
+import TuningReference from "@/components/TuningReference";
+import PracticeTimer from "@/components/PracticeTimer";
 
 const Index = () => {
   const [query, setQuery] = useState("");
@@ -13,8 +27,31 @@ const Index = () => {
   const [activeSuffix, setActiveSuffix] = useState<string | null>(null);
   const [expandedChordId, setExpandedChordId] = useState<string | null>(null);
   const [showCreator, setShowCreator] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [capoFret, setCapoFret] = useState(0);
+  const [scaleKey, setScaleKey] = useState<string | null>(null);
+  const [scaleType, setScaleType] = useState("major");
+  const [showScaleFilter, setShowScaleFilter] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { settings, setAudioSettings } = useAudioSettings();
   const { playChord } = useChordPlayer();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { leftHanded } = useLeftHanded();
+  const { theme } = useTheme();
+  const { recent, addRecent, clearRecent } = useRecentChords();
+  const [showTimer, setShowTimer] = useState(false);
+
+  // Transpose a root note up by N semitones (for capo display)
+  const transposeNote = (note: string, semitones: number): string => {
+    const idx = rootNotes.indexOf(note);
+    if (idx === -1) return note;
+    return rootNotes[((idx + semitones) % 12 + 12) % 12];
+  };
+
+  const capoLabel = (chord: Chord): string | null => {
+    if (capoFret === 0) return null;
+    return transposeNote(chord.key, capoFret) + chord.suffix;
+  };
 
   const allChords = useMemo(() => getAllChordsWithCustom(), [refreshKey]);
 
@@ -42,8 +79,11 @@ const Index = () => {
     if (activeSuffix) {
       results = results.filter(c => c.suffix === activeSuffix);
     }
+    if (showFavoritesOnly) {
+      results = results.filter(c => favorites.has(`${c.key}-${c.suffix}`));
+    }
     return results;
-  }, [query, activeRoot, activeSuffix, allChords]);
+  }, [query, activeRoot, activeSuffix, allChords, showFavoritesOnly, favorites]);
 
   // Group chords into rows for inline expansion
   const chordRows = useMemo(() => {
@@ -73,14 +113,21 @@ const Index = () => {
   const handleChordSelect = (chord: Chord) => {
     const id = `${chord.key}-${chord.suffix}`;
     setExpandedChordId(prev => prev === id ? null : id);
+    addRecent({ chordKey: chord.key, suffix: chord.suffix, label: chord.label });
   };
 
   const handleVoicingSaved = useCallback(() => {
     setRefreshKey(k => k + 1);
   }, []);
 
+  const expandedChord = expandedChordId
+    ? allChords.find(c => `${c.key}-${c.suffix}` === expandedChordId) ?? null
+    : null;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background lg:flex lg:h-screen lg:overflow-hidden">
+      {/* Left column: header + grid */}
+      <div className="lg:flex-1 lg:overflow-y-auto lg:min-w-0">
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-border/50">
         <div className="max-w-lg mx-auto px-4 py-3">
@@ -89,13 +136,187 @@ const Index = () => {
             <h1 className="text-lg font-semibold tracking-tighter text-foreground">
               Chord Library
             </h1>
-            <button
-              onClick={() => setShowCreator(true)}
-              className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-semibold">Custom</span>
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              {/* Audio settings */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Audio settings">
+                    <Settings2 className="w-4 h-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56 p-4 space-y-4">
+                  {/* Volume */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-foreground">Volume</span>
+                      <span className="text-xs text-muted-foreground">{Math.round(settings.volume * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={settings.volume}
+                      onChange={e => setAudioSettings({ volume: parseFloat(e.target.value) })}
+                      className="w-full accent-primary"
+                    />
+                  </div>
+                  {/* Instrument */}
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block mb-2">Instrument</span>
+                    <div className="grid grid-cols-2 gap-1">
+                      {([
+                        { value: "guitar", label: "Guitar" },
+                        { value: "organ",  label: "Organ"  },
+                        { value: "pad",    label: "Synth Pad" },
+                        { value: "piano",  label: "Grand Piano" },
+                      ] as { value: Instrument; label: string }[]).map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setAudioSettings({ instrument: value })}
+                          className={`py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            settings.instrument === value
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Tone — guitar only */}
+                  {settings.instrument === "guitar" && (
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block mb-2">Tone</span>
+                    <div className="flex gap-1">
+                      {(["soft", "medium", "bright"] as Tone[]).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setAudioSettings({ tone: t })}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
+                            settings.tone === t
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+                  {/* Capo */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-foreground">Capo</span>
+                      <span className="text-xs text-muted-foreground">{capoFret === 0 ? "Off" : `Fret ${capoFret}`}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map(n => (
+                        <button
+                          key={n}
+                          onClick={() => setCapoFret(n)}
+                          className={`flex-1 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                            capoFret === n
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {n === 0 ? "✕" : n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Tuning reference */}
+                  <TuningReference />
+
+                  {/* Left-handed */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground">Left-handed</span>
+                    <button
+                      onClick={() => setLeftHanded(!leftHanded)}
+                      className={`w-10 h-5 rounded-full transition-colors relative ${leftHanded ? "bg-primary" : "bg-secondary"}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${leftHanded ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </button>
+                  </div>
+
+                  {/* Theme */}
+                  <div>
+                    <span className="text-xs font-semibold text-foreground block mb-2">Theme</span>
+                    {/* Mode */}
+                    <div className="flex gap-1 mb-2">
+                      {([
+                        { id: "dark",  icon: <Moon className="w-3 h-3" />, label: "Dark"  },
+                        { id: "mid",   icon: <Moon className="w-3 h-3 opacity-50" />, label: "Dim" },
+                        { id: "light", icon: <Sun  className="w-3 h-3" />, label: "Light" },
+                      ] as { id: ThemeMode; icon: React.ReactNode; label: string }[]).map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => setTheme({ mode: m.id })}
+                          className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            theme.mode === m.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {m.icon}{m.label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Accent swatches */}
+                    <div className="flex gap-1.5">
+                      {([
+                        { id: "blue",   color: "bg-blue-500" },
+                        { id: "purple", color: "bg-purple-500" },
+                        { id: "green",  color: "bg-green-500" },
+                        { id: "amber",  color: "bg-amber-400" },
+                      ] as { id: ThemeAccent; color: string }[]).map(({ id, color }) => (
+                        <button
+                          key={id}
+                          onClick={() => setTheme({ accent: id })}
+                          className={`w-7 h-7 rounded-full ${color} transition-all ${
+                            theme.accent === id ? "ring-2 ring-offset-2 ring-offset-popover ring-foreground scale-110" : "opacity-70 hover:opacity-100"
+                          }`}
+                          title={id}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <button
+                onClick={() => setShowTimer(p => !p)}
+                className={`p-2 rounded-xl transition-colors ${
+                  showTimer ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+                title="Practice timer"
+              >
+                <Timer className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => { setShowFavoritesOnly(p => !p); setExpandedChordId(null); }}
+                className={`p-2 rounded-xl transition-colors ${
+                  showFavoritesOnly
+                    ? "bg-yellow-400/20 text-yellow-400"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+                title="Favorites"
+              >
+                <Star className={`w-4 h-4 ${showFavoritesOnly ? "fill-yellow-400" : ""}`} />
+              </button>
+
+              <button
+                onClick={() => setShowCreator(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm font-semibold">Custom</span>
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -133,52 +354,206 @@ const Index = () => {
 
         {/* Suffix filter */}
         <div className="max-w-lg mx-auto px-4 pb-3">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {suffixes.map(s => (
-              <button
-                key={s}
-                onClick={() => handleSuffixClick(s)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
-                  activeSuffix === s
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {suffixLabels[s] || s}
-              </button>
-            ))}
-          </div>
+          <TooltipProvider delayDuration={400}>
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {suffixes.map(s => (
+                <Tooltip key={s}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleSuffixClick(s)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                        activeSuffix === s
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {suffixLabels[s] || s}
+                    </button>
+                  </TooltipTrigger>
+                  {suffixDescriptions[s] && (
+                    <TooltipContent side="bottom" className="max-w-[200px] text-center text-xs">
+                      {suffixDescriptions[s]}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
         </div>
+
       </header>
 
+      {/* Scale highlight panel — outside sticky header so it's never clipped */}
+      <div className="max-w-lg mx-auto px-4 pt-3 lg:max-w-none">
+        <button
+          onClick={() => { setShowScaleFilter(p => !p); if (showScaleFilter) setScaleKey(null); }}
+          className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+            scaleKey
+              ? "bg-green-500/20 text-green-400"
+              : showScaleFilter
+              ? "bg-secondary text-foreground"
+              : "bg-secondary text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {scaleKey ? `✦ ${scaleKey} ${SCALE_LABELS[scaleType]}` : "Scale Highlight"}
+        </button>
+
+        <AnimatePresence>
+          {showScaleFilter && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: "hidden" }}
+            >
+              <div className="pt-2 pb-1 flex flex-col gap-2">
+                {/* Key row */}
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                  {rootNotes.filter(r => !r.includes("b") || ["Bb", "Eb", "Ab", "Db", "Gb"].includes(r)).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setScaleKey(prev => prev === r ? null : r)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                        scaleKey === r
+                          ? "bg-green-500 text-white"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                {/* Scale type row */}
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                  {Object.keys(SCALE_INTERVALS).map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setScaleType(s)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-colors ${
+                        scaleType === s
+                          ? "bg-green-500/20 text-green-400 ring-1 ring-green-500/40"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {SCALE_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {/* Chord grid with inline voicing expansion */}
-      <main className="max-w-lg mx-auto px-4 py-4">
+      <main className="max-w-lg mx-auto px-4 py-4 lg:max-w-none">
+        {/* Surprise me — shown when no recents yet */}
+        {recent.length === 0 && (
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={() => {
+                const rand = allChords[Math.floor(Math.random() * allChords.length)];
+                if (rand) handleChordSelect(rand);
+              }}
+              className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              Surprise me ↗
+            </button>
+          </div>
+        )}
+
+        {/* Recently played */}
+        {recent.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Recently played</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearRecent}
+                  className="text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => {
+                    const rand = allChords[Math.floor(Math.random() * allChords.length)];
+                    if (rand) handleChordSelect(rand);
+                  }}
+                  className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  Surprise me ↗
+                </button>
+              </div>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {recent.map(r => {
+                const chord = allChords.find(c => c.key === r.chordKey && c.suffix === r.suffix);
+                return chord ? (
+                  <button
+                    key={`${r.chordKey}-${r.suffix}`}
+                    onClick={() => handleChordSelect(chord)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors flex-shrink-0 ${
+                      expandedChordId === `${r.chordKey}-${r.suffix}`
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-foreground hover:bg-surface-elevated"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ) : null;
+              })}
+            </div>
+          </div>
+        )}
         {chordRows.map((row, rowIdx) => (
           <div key={rowIdx}>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 mb-2">
+            <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 mb-2">
               {row.map(chord => {
                 const id = `${chord.key}-${chord.suffix}`;
                 const isExpanded = expandedChordId === id;
+                const fav = isFavorite(id);
+                const sounsdLike = capoLabel(chord);
+                const inScale = !scaleKey || chordFitsScale(chord.key, chord.suffix, scaleKey, scaleType);
                 return (
-                  <button
-                    key={id}
-                    onClick={() => handleChordSelect(chord)}
-                    className={`p-2.5 rounded-xl text-center transition-all ${
-                      isExpanded
-                        ? "bg-primary text-primary-foreground ring-2 ring-primary shadow-lg scale-105"
-                        : "bg-card hover:bg-surface-elevated border border-border/30"
-                    }`}
-                  >
-                    <p className={`text-base font-bold ${isExpanded ? "" : "text-foreground"}`}>{chord.label}</p>
-                    <p className={`text-[10px] mt-0.5 ${isExpanded ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                      {chord.voicings.length} voicing{chord.voicings.length !== 1 ? "s" : ""}
-                    </p>
-                  </button>
+                  <div key={id} className={`relative group transition-opacity ${!inScale ? "opacity-25" : ""}`}>
+                    <button
+                      onClick={() => handleChordSelect(chord)}
+                      className={`w-full p-2.5 rounded-xl text-center transition-all ${
+                        isExpanded
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary shadow-lg scale-105"
+                          : inScale && scaleKey
+                          ? "bg-card hover:bg-surface-elevated border border-green-500/40 ring-1 ring-green-500/20"
+                          : "bg-card hover:bg-surface-elevated border border-border/30"
+                      }`}
+                    >
+                      <p className={`text-base font-bold leading-tight ${isExpanded ? "" : "text-foreground"}`}>{chord.label}</p>
+                      {sounsdLike ? (
+                        <p className={`text-[10px] mt-0.5 font-semibold ${isExpanded ? "text-primary-foreground/80" : "text-primary"}`}>
+                          → {sounsdLike}
+                        </p>
+                      ) : (
+                        <p className={`text-[10px] mt-0.5 ${isExpanded ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {chord.voicings.length} voicing{chord.voicings.length !== 1 ? "s" : ""}
+                        </p>
+                      )}
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); toggleFavorite(id); }}
+                      className={`absolute top-1 right-1 p-0.5 rounded transition-opacity ${
+                        fav ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+                      }`}
+                      title={fav ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Star className={`w-3 h-3 ${fav ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                    </button>
+                  </div>
                 );
               })}
             </div>
 
-            {/* Inline expansion for this row */}
+            {/* Inline expansion for this row — hidden on desktop (right panel used instead) */}
+            <div className="lg:hidden">
             <AnimatePresence mode="wait">
               {row.some(c => `${c.key}-${c.suffix}` === expandedChordId) && (() => {
                 const chord = row.find(c => `${c.key}-${c.suffix}` === expandedChordId)!;
@@ -191,11 +566,12 @@ const Index = () => {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden mb-2"
                   >
-                    <InlineVoicingPanel chord={chord} playChord={playChord} />
+                    <InlineVoicingPanel chord={chord} playChord={playChord} capoFret={capoFret} allChords={allChords} onSelectChord={handleChordSelect} activeScaleKey={scaleKey} activeScaleType={scaleType} />
                   </motion.div>
                 );
               })()}
             </AnimatePresence>
+            </div>
           </div>
         ))}
 
@@ -214,6 +590,49 @@ const Index = () => {
 
         <div className="h-20" />
       </main>
+      </div>{/* end left column */}
+
+      {/* Right panel — desktop only */}
+      <div className="hidden lg:flex lg:flex-col lg:w-[400px] lg:flex-shrink-0 lg:border-l lg:border-border/50 lg:h-screen">
+        <div className="p-4 flex-shrink-0 bg-background/80 backdrop-blur-md border-b border-border/50">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {expandedChord ? expandedChord.label : "Select a chord"}
+            </p>
+            <div className="flex items-center gap-1.5">
+              {expandedChord && scaleKey && (
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${
+                  chordFitsScale(expandedChord.key, expandedChord.suffix, scaleKey, scaleType)
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-muted text-muted-foreground line-through"
+                }`}>
+                  {scaleKey} {SCALE_LABELS[scaleType]}
+                </span>
+              )}
+              {expandedChord && capoFret > 0 && (
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
+                  → {transposeNote(expandedChord.key, capoFret) + expandedChord.suffix} (capo {capoFret})
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 pb-16">
+          {expandedChord ? (
+            <InlineVoicingPanel chord={expandedChord} playChord={playChord} capoFret={capoFret} allChords={allChords} onSelectChord={handleChordSelect} activeScaleKey={scaleKey} activeScaleType={scaleType} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground/50 gap-2 mt-16">
+              <Guitar className="w-10 h-10" />
+              <p className="text-sm">Click any chord to see voicings</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Practice timer overlay */}
+      <AnimatePresence>
+        {showTimer && <PracticeTimer onClose={() => setShowTimer(false)} />}
+      </AnimatePresence>
 
       {/* Creator overlay */}
       <AnimatePresence>
@@ -229,14 +648,45 @@ const Index = () => {
 };
 
 /** Inline voicing expansion panel showing all voicings with diagrams */
-function InlineVoicingPanel({ chord, playChord }: { chord: Chord; playChord: (v: any) => void }) {
+function InlineVoicingPanel({
+  chord, playChord, capoFret = 0, allChords = [], onSelectChord, activeScaleKey, activeScaleType,
+}: {
+  chord: Chord;
+  playChord: (v: any) => void;
+  capoFret?: number;
+  allChords?: Chord[];
+  onSelectChord?: (chord: Chord) => void;
+  activeScaleKey?: string | null;
+  activeScaleType?: string;
+}) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [showFretboard, setShowFretboard] = useState(false);
+
+  const existingKeys = useMemo(
+    () => new Set(allChords.map(c => `${c.key}-${c.suffix}`)),
+    [allChords],
+  );
+
+  const substitutions = useMemo(
+    () => getSubstitutions(chord.key, chord.suffix, existingKeys),
+    [chord.key, chord.suffix, existingKeys],
+  );
+
+  const scaleMatches = useMemo(
+    () => getChordInScales(chord.key, chord.suffix),
+    [chord.key, chord.suffix],
+  );
 
   return (
     <div className="bg-secondary/30 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-sm font-bold text-foreground">{chord.label}</span>
-        <span className="text-[10px] text-muted-foreground">
+        {capoFret > 0 && (
+          <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+            capo {capoFret}
+          </span>
+        )}
+        <span className="text-[10px] text-muted-foreground ml-auto">
           {chord.voicings.length} voicing{chord.voicings.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -251,7 +701,7 @@ function InlineVoicingPanel({ chord, playChord }: { chord: Chord; playChord: (v:
           transition={{ duration: 0.15 }}
           className="flex justify-center mb-3"
         >
-          <ChordDiagram voicing={chord.voicings[activeIdx]} size="lg" />
+          <ChordDiagram voicing={chord.voicings[activeIdx]} size="lg" capoFret={capoFret} />
         </motion.div>
       </AnimatePresence>
 
@@ -269,7 +719,31 @@ function InlineVoicingPanel({ chord, playChord }: { chord: Chord; playChord: (v:
             p === -1 ? "x" : p.toString()
           ).join(" · ")}
         </p>
+        <button
+          onClick={() => setShowFretboard(p => !p)}
+          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            showFretboard ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Neck
+        </button>
       </div>
+
+      {/* Fretboard map */}
+      <AnimatePresence>
+        {showFretboard && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: "hidden" }}
+            className="mb-3"
+          >
+            <FretboardMap chordKey={chord.key} suffix={chord.suffix} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Voicing thumbnails */}
       <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
@@ -290,6 +764,53 @@ function InlineVoicingPanel({ chord, playChord }: { chord: Chord; playChord: (v:
           </button>
         ))}
       </div>
+
+      {/* Substitution suggestions */}
+      {substitutions.length > 0 && onSelectChord && (
+        <div className="mt-4 pt-3 border-t border-border/30">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Try instead</p>
+          <div className="flex flex-col gap-1.5">
+            {substitutions.map(sub => {
+              const target = allChords.find(c => c.key === sub.key && c.suffix === sub.suffix);
+              return (
+                <button
+                  key={`${sub.key}-${sub.suffix}`}
+                  onClick={() => target && onSelectChord(target)}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors text-left"
+                >
+                  <span className="text-sm font-bold text-foreground">{sub.label}</span>
+                  <span className="text-[10px] text-muted-foreground ml-2 text-right leading-tight max-w-[160px]">{sub.reason}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Scale context — "Works in" */}
+      {scaleMatches.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-border/30">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Works in</p>
+          <div className="flex flex-wrap gap-1.5">
+            {scaleMatches.map(m => {
+              const isActive = activeScaleKey === m.scaleKey && activeScaleType === m.scaleType;
+              return (
+                <span
+                  key={`${m.scaleKey}-${m.scaleType}`}
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-green-500/20 text-green-400 ring-1 ring-green-500/30"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  <span>{m.scaleKey} {SCALE_LABELS[m.scaleType]}</span>
+                  <span className="font-mono opacity-70">{m.degreeLabel}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,14 +1,17 @@
 import { motion } from "framer-motion";
 import type { ChordVoicing } from "@/data/chords";
+import { getLeftHanded } from "@/hooks/useLeftHanded";
 
 interface ChordDiagramProps {
   voicing: ChordVoicing;
   size?: "sm" | "lg";
+  capoFret?: number;
 }
 
 const STRING_NAMES = ["E", "A", "D", "G", "B", "e"];
 
-export default function ChordDiagram({ voicing, size = "lg" }: ChordDiagramProps) {
+export default function ChordDiagram({ voicing, size = "lg", capoFret = 0 }: ChordDiagramProps) {
+  const leftHanded = getLeftHanded();
   const isLarge = size === "lg";
   const numFrets = 5;
   const numStrings = 6;
@@ -42,6 +45,7 @@ export default function ChordDiagram({ voicing, size = "lg" }: ChordDiagramProps
     <svg
       viewBox={`0 0 ${width} ${height}`}
       className={isLarge ? "w-full max-w-[280px]" : "w-full max-w-[140px]"}
+      style={leftHanded ? { transform: "scaleX(-1)" } : undefined}
     >
       {/* Fret position indicator */}
       {!showNut && (
@@ -66,6 +70,32 @@ export default function ChordDiagram({ voicing, size = "lg" }: ChordDiagramProps
         strokeWidth={showNut ? (isLarge ? 5 : 3) : (isLarge ? 2 : 1)}
         strokeLinecap="round"
       />
+
+      {/* Capo bar */}
+      {capoFret > 0 && showNut && (
+        <g>
+          <rect
+            x={padding - (isLarge ? 6 : 4)}
+            y={getFretY(0) - (isLarge ? 6 : 4)}
+            width={(numStrings - 1) * stringSpacing + (isLarge ? 12 : 8)}
+            height={isLarge ? 12 : 8}
+            rx={isLarge ? 6 : 4}
+            fill="hsl(var(--accent))"
+            opacity={0.85}
+          />
+          {isLarge && (
+            <text
+              x={padding + (numStrings - 1) * stringSpacing + 20}
+              y={getFretY(0) + 5}
+              className="fill-accent font-semibold"
+              fontSize={11}
+              textAnchor="start"
+            >
+              {capoFret}
+            </text>
+          )}
+        </g>
+      )}
 
       {/* Frets */}
       {Array.from({ length: numFrets }, (_, i) => (
