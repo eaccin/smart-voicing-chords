@@ -119,7 +119,7 @@ export function resolveProgression(
   return prog.chords.map(({ semitones, suffix }) => {
     const p = (rootPitch + semitones) % 12;
     const key = PITCH_NAMES[p];
-    const label = key + (suffix === "major" ? "" : suffix);
+    const label = key + (suffix === "major" ? "" : suffix === "minor" ? "m" : suffix);
     return { key, suffix, label };
   });
 }
