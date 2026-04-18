@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, ChevronDown, Repeat, RefreshCw, Plus, X, Music2 } from "lucide-react";
+import { Play, Square, ChevronDown, Repeat, RefreshCw, Plus, X, Music2, Save, Trash2 } from "lucide-react";
 import { PROGRESSIONS, CATEGORIES, resolveProgression } from "@/lib/progressions";
 import type { Progression } from "@/lib/progressions";
 import { getAllChordsWithCustom, rootNotes } from "@/data/chords";
@@ -246,6 +246,34 @@ export default function Progressions() {
   );
 }
 
+// ── Saved progressions (localStorage) ────────────────────────────────────────
+
+interface SavedProgression {
+  id: string;
+  name: string;
+  chords: LooperChord[];
+  bpm: number;
+  beatsPerChord: number;
+  savedAt: number;
+}
+
+const SAVED_KEY = "chordstrut:saved-progressions";
+
+function loadSavedProgressions(): SavedProgression[] {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSavedProgressions(list: SavedProgression[]) {
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch {}
+}
+
 // ── Looper ────────────────────────────────────────────────────────────────────
 
 const LOOPER_SUFFIXES = [
@@ -301,6 +329,11 @@ function LooperView({
   // Builder state
   const [builderRoot, setBuilderRoot] = useState("C");
   const [builderSuffix, setBuilderSuffix] = useState("major");
+
+  // Saved progressions
+  const [saved, setSaved] = useState<SavedProgression[]>(() => loadSavedProgressions());
+  const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
 
   // Sync queue when initialQueue changes (sent from library)
   const prevInitial = useRef<LooperChord[]>([]);
@@ -408,6 +441,43 @@ function LooperView({
     if (playing) stopLooper();
   }
 
+  function openSaveDialog() {
+    if (queue.length === 0) return;
+    setSaveName(queue.map(c => c.label).join(" – "));
+    setSavePromptOpen(true);
+  }
+
+  function confirmSave() {
+    const name = saveName.trim();
+    if (!name || queue.length === 0) return;
+    const entry: SavedProgression = {
+      id: `sp-${Date.now()}`,
+      name,
+      chords: queue,
+      bpm,
+      beatsPerChord,
+      savedAt: Date.now(),
+    };
+    const next = [entry, ...saved];
+    setSaved(next);
+    persistSavedProgressions(next);
+    setSavePromptOpen(false);
+    setSaveName("");
+  }
+
+  function loadSaved(sp: SavedProgression) {
+    setQueue(sp.chords);
+    setBpm(sp.bpm);
+    setBeatsPerChord(sp.beatsPerChord);
+    if (playing) stopLooper();
+  }
+
+  function deleteSaved(id: string) {
+    const next = saved.filter(s => s.id !== id);
+    setSaved(next);
+    persistSavedProgressions(next);
+  }
+
   const currentChord = queue[activeIdx];
 
   return (
@@ -502,17 +572,83 @@ function LooperView({
         </button>
       </div>
 
+      {/* Saved progressions */}
+      {saved.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border/40 p-4">
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-2">
+            Saved ({saved.length})
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {saved.map(sp => (
+              <div key={sp.id} className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2">
+                <button onClick={() => loadSaved(sp)}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <p className="text-xs font-bold text-foreground truncate">{sp.name}</p>
+                  <p className="text-[10px] text-muted-foreground font-mono truncate">
+                    {sp.chords.map(c => c.label).join(" · ")} · {sp.bpm} BPM
+                  </p>
+                </button>
+                <button onClick={() => deleteSaved(sp.id)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-destructive transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Queue */}
       {queue.length > 0 && (
         <div className="bg-card rounded-2xl border border-border/40 p-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2">
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Queue ({queue.length} chords)</p>
-            <button onClick={() => { setQueue([]); stopLooper(); }}
-              className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-            >
-              Clear all
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={openSaveDialog}
+                className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+              >
+                <Save className="w-3 h-3" />
+                Save
+              </button>
+              <button onClick={() => { setQueue([]); stopLooper(); }}
+                className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Clear all
+              </button>
+            </div>
           </div>
+
+          {savePromptOpen && (
+            <div className="mb-3 flex items-center gap-2">
+              <input
+                autoFocus
+                type="text"
+                value={saveName}
+                onChange={e => setSaveName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") confirmSave();
+                  if (e.key === "Escape") { setSavePromptOpen(false); setSaveName(""); }
+                }}
+                placeholder="Progression name"
+                className="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <button onClick={confirmSave}
+                disabled={!saveName.trim()}
+                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-40"
+              >
+                Save
+              </button>
+              <button onClick={() => { setSavePromptOpen(false); setSaveName(""); }}
+                className="px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground text-xs font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
             {queue.map((ch, i) => (
               <div key={i} className="relative group">
