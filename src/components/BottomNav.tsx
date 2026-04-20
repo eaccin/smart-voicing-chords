@@ -2,16 +2,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Guitar, Music2, Zap, Piano, BookOpen, TableProperties, ListMusic, BrainCircuit, Waves, LayoutGrid } from "lucide-react";
 
 const tabs = [
-  { path: "/", label: "Guide", icon: BookOpen },
-  { path: "/guitar", label: "Guitar", icon: Guitar },
-  { path: "/piano", label: "Piano", icon: Piano },
-  { path: "/scales", label: "Scales", icon: Waves },
-  { path: "/caged", label: "CAGED", icon: LayoutGrid },
-  { path: "/progressions", label: "Prog.", icon: ListMusic },
-  { path: "/quiz", label: "Quiz", icon: BrainCircuit },
-  { path: "/songs", label: "Songs", icon: Music2 },
-  { path: "/tab", label: "Tab", icon: TableProperties },
-  { path: "/engine", label: "Engine", icon: Zap },
+  { path: "/", label: "Guide", icon: BookOpen, tourId: "nav-guide" },
+  { path: "/guitar", label: "Guitar", icon: Guitar, tourId: "nav-guitar" },
+  { path: "/piano", label: "Piano", icon: Piano, tourId: "nav-piano" },
+  { path: "/scales", label: "Scales", icon: Waves, tourId: "nav-scales" },
+  { path: "/caged", label: "CAGED", icon: LayoutGrid, tourId: "nav-caged" },
+  { path: "/progressions", label: "Prog.", icon: ListMusic, tourId: "nav-progressions" },
+  { path: "/quiz", label: "Quiz", icon: BrainCircuit, tourId: "nav-quiz" },
+  { path: "/songs", label: "Songs", icon: Music2, tourId: "nav-songs" },
+  { path: "/tab", label: "Tab", icon: TableProperties, tourId: "nav-tab" },
+  { path: "/engine", label: "Engine", icon: Zap, tourId: "nav-engine" },
 ];
 
 export default function BottomNav() {
@@ -29,6 +29,7 @@ export default function BottomNav() {
           return (
             <button
               key={tab.path}
+              data-tour={tab.tourId}
               onClick={() => navigate(tab.path)}
               className={`flex-1 min-w-[68px] flex flex-col items-center gap-1 py-3 transition-colors ${
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"

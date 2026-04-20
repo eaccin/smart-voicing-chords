@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AudioUnlockOverlay from "@/components/AudioUnlockOverlay";
 import { initTheme } from "@/hooks/useTheme";
 import BottomNav from "@/components/BottomNav";
+import TourOverlay from "@/components/TourOverlay";
+import { TourProvider } from "@/contexts/TourContext";
 import Tutorial from "./pages/Tutorial.tsx";
 import Index from "./pages/Index.tsx";
 import Songs from "./pages/Songs.tsx";
@@ -29,6 +31,8 @@ const App = () => (
       <Sonner />
       <AudioUnlockOverlay />
       <BrowserRouter>
+        <TourProvider>
+        <TourOverlay />
         <Routes>
           <Route path="/" element={<Tutorial />} />
           <Route path="/guitar" element={<Index />} />
@@ -44,6 +48,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         <BottomNav />
+        </TourProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
