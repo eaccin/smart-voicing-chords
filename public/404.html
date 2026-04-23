@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      // GitHub Pages SPA redirect fix
+      var path = window.location.pathname.replace(/^\/smart-voicing-chords/, '');
+      window.location.replace(
+        window.location.origin + '/smart-voicing-chords/' +
+        (path ? '?p=' + encodeURIComponent(path) : '') +
+        window.location.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
