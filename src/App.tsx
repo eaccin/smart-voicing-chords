@@ -30,7 +30,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AudioUnlockOverlay />
-      <BrowserRouter>
+      <BrowserRouter basename="/smart-voicing-chords">
         <TourProvider>
         <TourOverlay />
         <Routes>
