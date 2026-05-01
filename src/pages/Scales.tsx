@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { Play, Square } from "lucide-react";
 import ScaleFretboard from "@/components/ScaleFretboard";
 import { SCALE_INTERVALS, SCALE_LABELS, SCALE_DEGREE_LABELS } from "@/lib/scales";
@@ -8,6 +8,7 @@ import { getAudioSettings } from "@/hooks/useAudioSettings";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const KEYS = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+const OPEN_STRING_PITCHES = [4, 9, 2, 7, 11, 4]; // E A D G B e
 const SCALE_TYPES = Object.keys(SCALE_LABELS);
 
 const ROOT_PITCH: Record<string, number> = {
@@ -174,6 +175,8 @@ export default function Scales() {
   const [scaleType, setScaleType] = useState("major");
   const [showNoteNames, setShowNoteNames] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [displayRange, setDisplayRange] = useState<"1oct" | "2oct" | "neck">("neck");
+  const [startFret, setStartFret] = useState(0);
   const timeoutRef = useRef<number | null>(null);
 
   const intervals    = SCALE_INTERVALS[scaleType] ?? [0,2,4,5,7,9,11];
@@ -189,6 +192,32 @@ export default function Scales() {
     intervals.forEach((iv, i) => m.set((root + iv) % 12, scaleNotes[i]));
     return m;
   }, [scaleKey, intervals, scaleNotes]);
+
+  // All fret positions (0–12) where the root note appears on any string
+  const rootFretPositions = useMemo(() => {
+    const rootPC = ROOT_PITCH[scaleKey] ?? 0;
+    const frets = new Set<number>();
+    OPEN_STRING_PITCHES.forEach(openPC => {
+      for (let f = 0; f <= 12; f++) {
+        if ((openPC + f) % 12 === rootPC) frets.add(f);
+      }
+    });
+    return [...frets].sort((a, b) => a - b);
+  }, [scaleKey]);
+
+  // When the key changes, reset startFret to the first valid root position
+  useEffect(() => {
+    setStartFret(prev =>
+      rootFretPositions.includes(prev) ? prev : (rootFretPositions[0] ?? 0)
+    );
+  }, [rootFretPositions]);
+
+  // Fret range to pass to the fretboard
+  const { fretMin, fretMax } = useMemo(() => {
+    if (displayRange === "neck") return { fretMin: 0, fretMax: 15 };
+    const span = displayRange === "1oct" ? 5 : 12;
+    return { fretMin: startFret, fretMax: Math.min(startFret + span, 15) };
+  }, [displayRange, startFret]);
 
   const handlePlay = useCallback(() => {
     if (playing) return;
@@ -270,17 +299,53 @@ export default function Scales() {
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               Neck Map
             </span>
-            <button
-              onClick={() => setShowNoteNames(p => !p)}
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
-                showNoteNames
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {showNoteNames ? "Notes" : "Degrees"}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* Range selector */}
+              {(["1oct", "2oct", "neck"] as const).map(range => (
+                <button
+                  key={range}
+                  onClick={() => setDisplayRange(range)}
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
+                    displayRange === range
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {range === "neck" ? "Full" : range === "1oct" ? "1 Oct" : "2 Oct"}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowNoteNames(p => !p)}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
+                  showNoteNames
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {showNoteNames ? "Notes" : "Degrees"}
+              </button>
+            </div>
           </div>
+
+          {/* Start position picker — shown when not in full-neck mode */}
+          {displayRange !== "neck" && (
+            <div className="flex items-center gap-1 mb-2 px-1">
+              <span className="text-[10px] text-muted-foreground shrink-0">Start:</span>
+              {rootFretPositions.map(fret => (
+                <button
+                  key={fret}
+                  onClick={() => setStartFret(fret)}
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
+                    startFret === fret
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {fret === 0 ? "Open" : `${fret}fr`}
+                </button>
+              ))}
+            </div>
+          )}
 
           <ScaleFretboard
             scaleKey={scaleKey}
@@ -288,6 +353,8 @@ export default function Scales() {
             degreeLabels={degreeLabels}
             showNoteNames={showNoteNames}
             spelledNoteMap={spelledNoteMap}
+            fretMin={fretMin}
+            fretMax={fretMax}
           />
 
           {/* Legend */}

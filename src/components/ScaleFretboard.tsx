@@ -8,6 +8,10 @@ interface ScaleFretboardProps {
   showNoteNames?: boolean;
   /** Properly-spelled note name for each pitch class in the scale (e.g. pc 10 → "Bb" not "A#") */
   spelledNoteMap?: Map<number, string>;
+  /** First fret to display (default 0 = open position) */
+  fretMin?: number;
+  /** Last fret to display (default 15 = full neck) */
+  fretMax?: number;
 }
 
 const ROOT_PITCH: Record<string, number> = {
@@ -27,13 +31,24 @@ export default function ScaleFretboard({
   degreeLabels,
   showNoteNames = false,
   spelledNoteMap,
+  fretMin: fretMinProp,
+  fretMax: fretMaxProp,
 }: ScaleFretboardProps) {
   const leftHanded = getLeftHanded();
   const rootPC = ROOT_PITCH[scaleKey] ?? 0;
-  // Fallback chromatic names (used only when spelledNoteMap is absent)
   const fallbackNames = USE_FLATS.has(scaleKey) ? NOTE_FLAT : NOTE_SHARP;
 
-  // Map pitch class → label
+  const minF = fretMinProp ?? 0;
+  const maxF = fretMaxProp ?? NUM_FRETS;
+
+  // Visual slot count:
+  //   minF=0 → slot 0 = open-string area (before nut), slot 1..maxF = fret slots
+  //   minF>0 → slot 0 = before start line (unused), slot 1..(maxF-minF+1) = fret slots
+  const visibleSlotCount = maxF - (minF > 0 ? minF - 1 : 0);
+
+  // Map a fret number to its visual slot index (0-based from left)
+  const slotOf = (f: number) => (minF > 0 ? f - minF + 1 : f);
+
   const scalePCMap = useMemo(() => {
     const m = new Map<number, string>();
     intervals.forEach((iv, i) => {
@@ -48,7 +63,7 @@ export default function ScaleFretboard({
   const padTop = 16;
   const padBottom = 18;
   const numStrings = 6;
-  const width = padLeft + NUM_FRETS * fretW + 8;
+  const width = padLeft + visibleSlotCount * fretW + 8;
   const height = padTop + (numStrings - 1) * stringH + padBottom;
   const dotR = 7;
 
@@ -57,12 +72,13 @@ export default function ScaleFretboard({
       x: number; y: number; pc: number; isRoot: boolean; label: string;
     }> = [];
     for (let s = 0; s < numStrings; s++) {
-      for (let f = 0; f <= NUM_FRETS; f++) {
+      for (let f = minF; f <= maxF; f++) {
         const pc = (OPEN_STRING_PITCHES[s] + f) % 12;
         if (!scalePCMap.has(pc)) continue;
-        const displayString = numStrings - 1 - s; // e at top, E at bottom
-        const displayFret   = leftHanded ? NUM_FRETS - f : f;
-        const x = padLeft + displayFret * fretW - fretW / 2;
+        const displayString = numStrings - 1 - s;
+        const slot = slotOf(f);
+        const displaySlot = leftHanded ? visibleSlotCount - slot : slot;
+        const x = padLeft + displaySlot * fretW - fretW / 2;
         const y = padTop + displayString * stringH;
         const noteLabel = spelledNoteMap?.get(pc) ?? fallbackNames[pc];
         const label = showNoteNames ? noteLabel : (scalePCMap.get(pc) ?? "");
@@ -70,25 +86,47 @@ export default function ScaleFretboard({
       }
     }
     return result;
-  }, [scalePCMap, rootPC, leftHanded, showNoteNames, spelledNoteMap, fallbackNames]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scalePCMap, rootPC, leftHanded, showNoteNames, spelledNoteMap, fallbackNames, minF, maxF, visibleSlotCount]);
 
-  const fretMarkers = [3, 5, 7, 9, 12, 15];
+  const fretMarkers = [3, 5, 7, 9, 12, 15].filter(f => f >= minF && f <= maxF);
 
   return (
     <div className="w-full overflow-x-auto no-scrollbar">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full min-w-[470px] max-w-[640px]"
+        className={`w-full max-w-[640px] ${visibleSlotCount >= 12 ? "min-w-[470px]" : ""}`}
       >
-        {/* Nut */}
-        <line
-          x1={padLeft} y1={padTop}
-          x2={padLeft} y2={padTop + (numStrings - 1) * stringH}
-          stroke="hsl(var(--nut-color))" strokeWidth={4} strokeLinecap="round"
-        />
+        {/* Nut — only for open position */}
+        {minF === 0 && (
+          <line
+            x1={padLeft} y1={padTop}
+            x2={padLeft} y2={padTop + (numStrings - 1) * stringH}
+            stroke="hsl(var(--nut-color))" strokeWidth={4} strokeLinecap="round"
+          />
+        )}
+
+        {/* Start-position indicator for non-open views */}
+        {minF > 0 && (
+          <>
+            <line
+              x1={padLeft} y1={padTop}
+              x2={padLeft} y2={padTop + (numStrings - 1) * stringH}
+              stroke="hsl(var(--fret-color))" strokeWidth={2} strokeLinecap="round"
+            />
+            <text
+              x={padLeft + 3}
+              y={padTop - 4}
+              className="fill-muted-foreground font-mono"
+              fontSize={8}
+            >
+              {minF}fr
+            </text>
+          </>
+        )}
 
         {/* Frets */}
-        {Array.from({ length: NUM_FRETS }, (_, i) => (
+        {Array.from({ length: visibleSlotCount }, (_, i) => (
           <line key={i}
             x1={padLeft + (i + 1) * fretW} y1={padTop}
             x2={padLeft + (i + 1) * fretW} y2={padTop + (numStrings - 1) * stringH}
@@ -100,19 +138,23 @@ export default function ScaleFretboard({
         {Array.from({ length: numStrings }, (_, i) => (
           <line key={i}
             x1={padLeft} y1={padTop + i * stringH}
-            x2={padLeft + NUM_FRETS * fretW} y2={padTop + i * stringH}
+            x2={padLeft + visibleSlotCount * fretW} y2={padTop + i * stringH}
             stroke="hsl(var(--string-color))" strokeWidth={i < 3 ? 2 : 1.5}
           />
         ))}
 
         {/* Fret position markers */}
-        {fretMarkers.map(f => (
-          <circle key={f}
-            cx={padLeft + f * fretW - fretW / 2}
-            cy={padTop + (numStrings - 1) * stringH + 10}
-            r={3} className="fill-muted-foreground/30"
-          />
-        ))}
+        {fretMarkers.map(f => {
+          const slot = slotOf(f);
+          const displaySlot = leftHanded ? visibleSlotCount - slot : slot;
+          return (
+            <circle key={f}
+              cx={padLeft + displaySlot * fretW - fretW / 2}
+              cy={padTop + (numStrings - 1) * stringH + 10}
+              r={3} className="fill-muted-foreground/30"
+            />
+          );
+        })}
 
         {/* String labels — e at top, E at bottom */}
         {STRING_LABELS_TOP_TO_BOTTOM.map((label, i) => (
