@@ -60,7 +60,7 @@ export default function ScaleFretboard({
   const fretW = 30;
   const stringH = 20;
   const padLeft = 24;
-  const padTop = 16;
+  const padTop = minF > 0 ? 22 : 16;
   const padBottom = 18;
   const numStrings = 6;
   const width = padLeft + visibleSlotCount * fretW + 8;
@@ -116,7 +116,7 @@ export default function ScaleFretboard({
             />
             <text
               x={padLeft + 3}
-              y={padTop - 4}
+              y={padTop - 10}
               className="fill-muted-foreground font-mono"
               fontSize={8}
             >
