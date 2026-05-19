@@ -407,7 +407,14 @@ function PianoSheetOverlay({
   onClose: () => void;
 }) {
   function handlePrint() {
-    window.print();
+    // If the sheet overlay isn't open, open it first so print CSS shows the sheet.
+    if (!showSheet) {
+      setShowSheet(true);
+      // Give React time to render the overlay before invoking print
+      setTimeout(() => window.print(), 300);
+    } else {
+      window.print();
+    }
   }
 
   return (
