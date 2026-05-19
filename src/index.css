@@ -192,15 +192,28 @@
   }
 
   /* Piano sheet print styles */
-  /* Hide everything except the sheet overlay */
-  body > *:not(.piano-sheet-overlay) {
+  /* Hide everything by default during print */
+  * {
     display: none !important;
+  }
+
+  /* Show only the overlay and its contents */
+  .piano-sheet-overlay,
+  .piano-sheet-overlay * {
+    display: flex !important;
   }
 
   .piano-sheet-overlay {
     position: static !important;
     background: white !important;
     color: black !important;
+    flex-direction: column;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .piano-sheet-overlay .piano-sheet-content {
+    flex: 1;
   }
 
   .piano-sheet-no-print {
@@ -216,20 +229,24 @@
   }
 
   .piano-sheet-grid {
+    display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
   }
 
   .piano-sheet-card {
+    display: flex !important;
     background: white !important;
     border: 1px solid #ccc !important;
     break-inside: avoid;
   }
 
   .piano-sheet-label {
+    display: block !important;
     color: black !important;
   }
 
   .piano-sheet-sublabel {
+    display: block !important;
     color: #555 !important;
   }
 }
