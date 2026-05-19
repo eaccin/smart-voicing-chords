@@ -411,7 +411,7 @@ function PianoSheetOverlay({
   }
 
   return (
-    <div className="piano-sheet-overlay fixed inset-0 z-[60] bg-background flex flex-col">
+    <div id="piano-sheet-overlay" className="piano-sheet-overlay fixed inset-0 z-[60] bg-background flex flex-col">
       {/* Header — hidden during print */}
       <div className="piano-sheet-no-print sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-3 flex items-center gap-3">
         <button onClick={onClose} className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-foreground">
