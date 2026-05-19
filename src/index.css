@@ -198,18 +198,20 @@
     size: A4;
   }
 
-  /* Hide all elements by default */
-  #root {
-    display: block !important;
-  }
-
-  #root > * {
+  /* Hide everything except the overlay and its contents */
+  * {
     display: none !important;
   }
 
-  /* Show only the piano sheet overlay */
-  #piano-sheet-overlay {
+  html, body, #root, #piano-sheet-overlay {
     display: block !important;
+  }
+
+  #piano-sheet-overlay * {
+    display: block !important;
+  }
+
+  #piano-sheet-overlay {
     position: static !important;
     background: white !important;
     color: black !important;
@@ -218,10 +220,6 @@
     margin: 0 !important;
     padding: 0 !important;
     z-index: auto !important;
-  }
-
-  #piano-sheet-overlay > * {
-    display: block !important;
   }
 
   .piano-sheet-no-print {
