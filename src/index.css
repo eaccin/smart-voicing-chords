@@ -176,12 +176,13 @@
   body {
     background: white !important;
     color: black !important;
-    margin: 0 !important;
-    padding: 0 !important;
   }
 
-  html {
-    background: white !important;
+  html, body, #root {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .print\:hidden {
@@ -197,17 +198,18 @@
     size: A4;
   }
 
-  /* Piano sheet print styles */
-  /* Hide everything except piano sheet */
+  /* Hide all elements by default */
+  #root {
+    display: block !important;
+  }
+
   #root > * {
     display: none !important;
   }
 
-  .piano-sheet-overlay {
+  /* Show only the piano sheet overlay */
+  #piano-sheet-overlay {
     display: block !important;
-  }
-
-  .piano-sheet-overlay {
     position: static !important;
     background: white !important;
     color: black !important;
@@ -215,6 +217,11 @@
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
+    z-index: auto !important;
+  }
+
+  #piano-sheet-overlay > * {
+    display: block !important;
   }
 
   .piano-sheet-no-print {
@@ -230,20 +237,24 @@
     display: block !important;
     overflow: visible !important;
     width: 100% !important;
+    height: auto !important;
   }
 
   .piano-sheet-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     width: 100% !important;
+    gap: 1.5rem !important;
   }
 
   .piano-sheet-card {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     background: white !important;
     border: 1px solid #ccc !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    padding: 1rem !important;
   }
 
   .piano-sheet-card * {
@@ -252,9 +263,15 @@
 
   .piano-sheet-label {
     color: black !important;
+    font-weight: bold !important;
   }
 
   .piano-sheet-sublabel {
-    color: #555 !important;
+    color: #666 !important;
+    font-size: 0.875rem !important;
+  }
+
+  svg {
+    display: block !important;
   }
 }
